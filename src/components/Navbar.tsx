@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 
 const navLinks = [
   { name: "About", href: "#about" },
+  { name: "Blogs", href: "/blogs" },
   { name: "Services", href: "#services" },
   { name: "Community", href: "#community" },
   { name: "Contact", href: "#contact" },
@@ -58,13 +59,6 @@ export function Navbar() {
           ))}
         </div>
 
-        {/* CTA Button */}
-        <div className="hidden md:block">
-          <Button variant="hero" size="lg">
-            Join the Family
-          </Button>
-        </div>
-
         {/* Mobile Menu Toggle */}
         <button
           className="md:hidden text-foreground p-2"
@@ -94,9 +88,6 @@ export function Navbar() {
               {link.name}
             </a>
           ))}
-          <Button variant="hero" className="w-full mt-4">
-            Join the Family
-          </Button>
         </div>
       </motion.div>
     </motion.header>
