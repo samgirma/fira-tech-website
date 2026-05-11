@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Bell, MessageSquare, Plus, Edit, Trash2, Eye, Shield } from 'lucide-react'
+import { Bell, MessageSquare, Plus, Edit, Trash2, Eye, Shield, Briefcase } from 'lucide-react'
 import BlogForm from './BlogForm'
 import CommentManager from './CommentManager'
+import JobsManagement from './JobsManagement'
 
 interface Blog {
   id: string
@@ -163,7 +164,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
             transition={{ duration: 0.6 }}
           >
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3 bg-card/50 border border-forest/20">
+              <TabsList className="grid w-full grid-cols-4 bg-card/50 border border-forest/20">
                 <TabsTrigger 
                   value="blogs" 
                   className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-forest data-[state=active]:to-accent data-[state=active]:text-white"
@@ -180,6 +181,13 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                       {pendingComments.length}
                     </Badge>
                   )}
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="jobs"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-forest data-[state=active]:to-accent data-[state=active]:text-white relative"
+                >
+                  Jobs
+                  <Briefcase className="w-4 h-4 ml-2" />
                 </TabsTrigger>
                 <TabsTrigger 
                   value="new-blog"
@@ -253,6 +261,10 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                   comments={comments} 
                   onCommentUpdated={handleCommentUpdated}
                 />
+              </TabsContent>
+
+              <TabsContent value="jobs" className="mt-6">
+                <JobsManagement />
               </TabsContent>
 
               <TabsContent value="new-blog" className="mt-6">

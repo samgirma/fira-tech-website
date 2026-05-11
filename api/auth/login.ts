@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import { supabase } from '../../src/lib/supabase'
-import prisma from '../../lib/prisma'
+import { generateToken, setAuthCookie } from '../../lib/jwt'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST') {
@@ -21,24 +21,61 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(401).json({ error: 'Invalid credentials' })
       }
       
-      // Check if user is admin in our database
-      const user = await prisma.user.findUnique({
-        where: { email: authData.user.email },
-        select: { id: true, email: true, name: true, role: true }
-      })
+      // Check if user exists and has admin metadata
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', authData.user.id)
+        .single()
       
-      if (!user || user.role !== 'ADMIN') {
+      if (profileError) {
+        // Create admin profile if it doesn't exist
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: authData.user.id,
+            email: authData.user.email,
+            name: authData.user.user_metadata?.name || authData.user.email?.split('@')[0] || 'Admin',
+            role: 'ADMIN'
+          })
+          .select('id, email, name, role')
+          .single()
+        
+        if (insertError) {
+          return res.status(500).json({ error: 'Failed to create admin profile' })
+        }
+        
+        const user = {
+          id: authData.user.id,
+          email: authData.user.email,
+          name: authData.user.user_metadata?.name || authData.user.email?.split('@')[0] || 'Admin',
+          role: 'ADMIN'
+        }
+      } else if (profile.role !== 'ADMIN') {
         return res.status(403).json({ error: 'Access denied. Admin role required.' })
+      } else {
+        const user = {
+          id: authData.user.id,
+          email: authData.user.email,
+          name: authData.user.user_metadata?.name || authData.user.email?.split('@')[0] || 'Admin',
+          role: profile.role
+        }
       }
       
+      // Generate JWT token
+      const token = generateToken({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role
+      })
+      
+      // Set secure HTTP-only cookie
+      setAuthCookie(res, token)
+      
       return res.status(200).json({
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role
-        },
-        session: authData.session
+        user,
+        message: 'Login successful'
       })
     } catch (error) {
       console.error('Login error:', error)

@@ -1,24 +1,46 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
-import prisma from '../../lib/prisma'
+import { supabase } from '../../src/lib/supabase'
+
+interface Blog {
+  id: string
+  title: string
+  content: string
+  slug: string
+  published: boolean
+  author_id: string
+  created_at: string
+  profiles?: {
+    name: string
+    email: string
+  }
+  comments?: string[]
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
     try {
-      const blogs = await prisma.blog.findMany({
-        where: { published: true },
-        include: {
-          author: {
-            select: { name: true, email: true }
-          },
-          comments: {
-            where: { approved: true },
-            orderBy: { createdAt: 'desc' }
-          }
-        },
-        orderBy: { createdAt: 'desc' }
-      })
+      const { data: blogs, error } = await supabase
+        .from('blogs')
+        .select(`
+          *,
+          profiles!inner(name, email),
+          comments(id)
+        `)
+        .eq('published', true)
+        .order('created_at', { ascending: false })
       
-      return res.status(200).json(blogs)
+      if (error) throw error
+      
+      // Transform data to match expected format
+      const transformedBlogs = (blogs as Blog[]).map((blog: any) => ({
+        ...blog,
+        author: blog.profiles || { name: 'Unknown', email: 'unknown@example.com' },
+        _count: {
+          comments: Array.isArray(blog.comments) ? blog.comments.length : 0
+        }
+      }))
+      
+      return res.status(200).json(transformedBlogs)
     } catch (error) {
       console.error('Error fetching blogs:', error)
       return res.status(500).json({ error: 'Failed to fetch blogs' })
@@ -38,22 +60,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .replace(/(^-|-$)/g, '')
         + '-' + Date.now()
       
-      const blog = await prisma.blog.create({
-        data: {
+      const { data: blog, error } = await supabase
+        .from('blogs')
+        .insert({
           title,
           content,
           slug,
-          authorId,
+          author_id: authorId,
           published: true
-        },
-        include: {
-          author: {
-            select: { name: true, email: true }
-          }
-        }
-      })
+        })
+        .select(`
+          *,
+          profiles!inner(name, email)
+        `)
+        .single()
       
-      return res.status(201).json(blog)
+      if (error) throw error
+      
+      return res.status(201).json({
+        ...(blog as Blog),
+        author: (blog as any).profiles || { name: 'Unknown', email: 'unknown@example.com' },
+        _count: { comments: 0 }
+      })
     } catch (error) {
       console.error('Error creating blog:', error)
       return res.status(500).json({ error: 'Failed to create blog' })

@@ -34,7 +34,6 @@ export default function Login({ onLogin }: LoginProps) {
       const data = await response.json()
 
       if (response.ok) {
-        localStorage.setItem('adminUser', JSON.stringify(data.user))
         onLogin(data.user)
       } else {
         setError(data.error || 'Login failed')

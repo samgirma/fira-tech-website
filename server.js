@@ -1,7 +1,9 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { dirname } from 'path';
+import jwt from 'jsonwebtoken';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -12,8 +14,11 @@ const PORT = 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 // API Routes
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+
 app.use('/api/auth/login', async (req, res) => {
   if (req.method === 'POST') {
     try {
@@ -23,24 +28,98 @@ app.use('/api/auth/login', async (req, res) => {
         return res.status(400).json({ error: 'Email and password are required' });
       }
       
-      // Mock authentication for development
+      // Mock authentication - in production, verify against database
       if (email === 'admin@fira.tech' && password === 'admin123') {
-        const mockUser = {
+        const user = {
           id: '1',
           email: 'admin@fira.tech',
           name: 'Admin User',
           role: 'ADMIN'
         };
         
+        // Generate JWT token
+        const token = jwt.sign(
+          {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            exp: Math.floor(Date.now() / 1000) + (60 * 60) // 1 hour expiration
+          },
+          JWT_SECRET
+        );
+        
+        // Set secure HTTP-only cookie
+        const cookie = `auth-token=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=3600`;
+        res.setHeader('Set-Cookie', cookie);
+        
         return res.status(200).json({
-          user: mockUser,
-          session: { user: mockUser }
+          user,
+          message: 'Login successful'
         });
       }
       
       return res.status(401).json({ error: 'Invalid credentials' });
     } catch (error) {
       console.error('Login error:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+  
+  return res.status(405).json({ error: 'Method not allowed' });
+});
+
+app.use('/api/auth/me', async (req, res) => {
+  if (req.method === 'GET') {
+    try {
+      // Extract token from cookie
+      const cookieHeader = req.headers.cookie || '';
+      const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+        const [name, value] = cookie.trim().split('=');
+        acc[name] = value;
+        return acc;
+      }, {});
+      
+      const token = cookies['auth-token'];
+      
+      if (!token) {
+        return res.status(401).json({ error: 'No token provided' });
+      }
+      
+      // Verify JWT token
+      const decoded = jwt.verify(token, JWT_SECRET);
+      
+      if (!decoded) {
+        return res.status(401).json({ error: 'Invalid or expired token' });
+      }
+      
+      return res.status(200).json({
+        user: {
+          id: decoded.id,
+          email: decoded.email,
+          name: decoded.name,
+          role: decoded.role
+        }
+      });
+    } catch (error) {
+      console.error('Auth me error:', error);
+      return res.status(401).json({ error: 'Token verification failed' });
+    }
+  }
+  
+  return res.status(405).json({ error: 'Method not allowed' });
+});
+
+app.use('/api/auth/logout', async (req, res) => {
+  if (req.method === 'POST') {
+    try {
+      // Clear the auth cookie
+      const cookie = 'auth-token=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      res.setHeader('Set-Cookie', cookie);
+      
+      return res.status(200).json({ message: 'Logout successful' });
+    } catch (error) {
+      console.error('Logout error:', error);
       return res.status(500).json({ error: 'Internal server error' });
     }
   }
