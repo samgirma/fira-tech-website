@@ -216,9 +216,9 @@
     @apply transition-all duration-500 ease-out;
   }
 
-  /* Section padding */
+  /* Section padding - full-screen gallery slides */
   .section-padding {
-    @apply py-20 md:py-32 px-4 md:px-8;
+    @apply snap-start min-h-screen flex flex-col justify-center py-20 md:py-32 px-4 md:px-8;
   }
 
   /* Container max width */

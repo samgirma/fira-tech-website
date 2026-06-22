@@ -95,7 +95,7 @@ export default function BlogDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-hero-gradient relative overflow-hidden">
+      <div className="min-h-screen bg-background/40 backdrop-blur-sm relative overflow-hidden">
         <div className="absolute inset-0 oromo-pattern opacity-10" />
         <div className="relative z-10 py-20 px-6">
           <div className="container-fira max-w-4xl mx-auto">
@@ -124,7 +124,7 @@ export default function BlogDetailPage() {
 
   if (error || !blog) {
     return (
-      <div className="min-h-screen bg-hero-gradient flex items-center justify-center">
+      <div className="min-h-screen bg-background/40 backdrop-blur-sm flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">Blog Post Not Found</h1>
           <p className="text-muted-foreground mb-6">
@@ -139,7 +139,7 @@ export default function BlogDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-hero-gradient relative overflow-hidden">
+    <div className="min-h-screen bg-background/40 backdrop-blur-sm relative overflow-hidden">
       <div className="absolute inset-0 oromo-pattern opacity-10" />
       
       {/* Floating Glow Effects */}

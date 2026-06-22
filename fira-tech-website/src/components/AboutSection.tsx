@@ -31,7 +31,7 @@ export function AboutSection() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section id="about" className="section-padding relative overflow-hidden">
+    <section id="about" className="section-padding relative bg-background/40 backdrop-blur-sm overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 oromo-pattern opacity-20" />
       

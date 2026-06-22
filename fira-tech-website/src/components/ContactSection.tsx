@@ -112,7 +112,7 @@ export function ContactSection() {
   }
 
   return (
-    <section id="contact" className="section-padding relative bg-secondary/30">
+    <section id="contact" className="section-padding relative bg-background/40 backdrop-blur-sm">
       <div className="absolute inset-0 oromo-pattern opacity-10" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/5 rounded-full blur-[150px]" />
 

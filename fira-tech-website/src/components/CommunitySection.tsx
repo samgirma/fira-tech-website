@@ -28,7 +28,7 @@ export function CommunitySection() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section id="community" className="section-padding relative overflow-hidden">
+    <section id="community" className="section-padding relative bg-background/40 backdrop-blur-sm overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 oromo-pattern opacity-15" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-forest/5 rounded-full blur-[200px]" />

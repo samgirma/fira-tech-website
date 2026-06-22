@@ -52,7 +52,7 @@ export function ServicesSection() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section id="services" className="section-padding relative bg-secondary/30">
+    <section id="services" className="section-padding relative bg-background/40 backdrop-blur-sm">
       {/* Background Elements */}
       <div className="absolute inset-0 oromo-pattern opacity-10" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[200px]" />

@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import bgImage from "@/assets/hero-oda-tree.jpg";
 import Index from "./pages/Index";
 import Blogs from "./pages/Blogs";
 import BlogDetail from "./pages/BlogDetail";
@@ -30,15 +31,30 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/blogs" element={<Blogs />} />
-              <Route path="/blog/:slug" element={<BlogDetail />} />
-              <Route path="/careers" element={<Careers />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
+          <div className="relative min-h-screen">
+            {/* Fixed Background */}
+            <div
+              className="fixed inset-0 -z-10 bg-background"
+              style={{
+                backgroundImage: `url(${bgImage})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundAttachment: "fixed",
+                backgroundRepeat: "no-repeat",
+              }}
+            />
+            {/* Overlay */}
+            <div className="fixed inset-0 -z-10 bg-gradient-to-b from-background/70 via-background/50 to-background/70" />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/blogs" element={<Blogs />} />
+                <Route path="/blog/:slug" element={<BlogDetail />} />
+                <Route path="/careers" element={<Careers />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </div>
         </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>

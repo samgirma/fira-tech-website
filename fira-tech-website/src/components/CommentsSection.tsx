@@ -90,7 +90,7 @@ export default function CommentsSection({ blogId = 'homepage' }: CommentsSection
   }
 
   return (
-    <section className="py-16 px-6 bg-gradient-to-b from-transparent to-background/50">
+    <section className="snap-start min-h-screen flex flex-col justify-center py-16 px-6 bg-background/40 backdrop-blur-sm">
       <div className="container-fira max-w-4xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 30 }}

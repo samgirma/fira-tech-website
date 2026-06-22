@@ -39,7 +39,7 @@ export function Footer() {
   }, [])
 
   return (
-    <footer className="relative bg-secondary/50 border-t border-border/50">
+    <footer className="relative bg-background/40 backdrop-blur-sm border-t border-border/50">
       <div className="absolute inset-0 oromo-pattern opacity-5" />
 
       <div className="container-fira relative px-6 py-16">

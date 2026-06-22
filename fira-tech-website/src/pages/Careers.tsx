@@ -74,7 +74,7 @@ export default function Careers() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-background/95">
+    <div className="min-h-screen bg-background/40 backdrop-blur-sm">
         <div className="relative overflow-hidden bg-gradient-to-r from-forest/10 to-accent/10">
           <div className="container-fira px-6 py-24">
             <div className="text-center max-w-4xl mx-auto space-y-4">
