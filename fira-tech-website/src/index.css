@@ -225,4 +225,47 @@
   .container-fira {
     @apply max-w-7xl mx-auto;
   }
+
+  /* GPU acceleration for animated elements */
+  .gpu-accelerated {
+    will-change: transform;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+}
+
+/* Mobile performance optimizations */
+@media (max-width: 767px) {
+  /* Disable heavy scroll-snap on mobile to prevent jittery jumping */
+  html {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Reduce motion for users who prefer it */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Optimize backdrop-filter performance on mobile */
+  .backdrop-blur-xl {
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+  }
+}
+
+/* Desktop: enable GPU acceleration for scroll-locked elements */
+@media (min-width: 768px) {
+  .gpu-accelerated {
+    will-change: transform;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
 }
