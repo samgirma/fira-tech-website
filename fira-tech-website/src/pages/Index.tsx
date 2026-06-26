@@ -5,6 +5,7 @@ import { ServicesSection } from "@/components/ServicesSection";
 import { CommunitySection } from "@/components/CommunitySection";
 import CommentsSection from "@/components/CommentsSection";
 import { Footer } from "@/components/Footer";
+import { ChatAssistant } from "@/components/ChatAssistant";
 
 const Index = () => {
   return (
@@ -18,6 +19,7 @@ const Index = () => {
         <CommentsSection />
       </main>
       <Footer />
+      <ChatAssistant />
     </div>
   );
 };

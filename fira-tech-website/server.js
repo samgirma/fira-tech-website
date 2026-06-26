@@ -263,44 +263,133 @@ app.use('/api/admin/jobs', async (req, res) => {
   return res.status(405).json({ error: 'Method not allowed' })
 })
 
+const chatSupabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY)
+
+const CHAT_SYSTEM_PROMPT = `You are the Fira Tech AI assistant. Answer questions about Fira Tech based ONLY on the provided knowledge base context.
+
+Rules:
+- Give short, precise answers (1-3 sentences max)
+- Greet politely when the user greets you
+- If the user asks something outside Fira Tech, politely say you can only provide answers related to Fira Tech Solutions
+- Never fabricate information — only use what's in the context
+- If the context doesn't contain enough info, say so briefly
+- No filler, no lengthy explanations
+- Be direct and factual`
+
+async function generateGeminiEmbedding(text) {
+  const { GoogleGenerativeAI } = await import('@google/generative-ai')
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+  const model = genAI.getGenerativeModel({ model: 'gemini-embedding-001' })
+  const res = await model.embedContent(text)
+  return res.embedding.values.slice(0, 1536)
+}
+
+async function chatVectorSearch(query) {
+  const embedding = await generateGeminiEmbedding(query)
+  const pgVec = '[' + embedding.join(',') + ']'
+  const { data, error } = await chatSupabase.rpc('search_knowledge_base', {
+    query_embedding: pgVec,
+    match_count: 5,
+    match_threshold: 0.3,
+  })
+  if (error) {
+    console.error('[VECTOR] RPC error:', error.message)
+    return ''
+  }
+  if (!data || data.length === 0) {
+    console.log('[VECTOR] No results for:', query.substring(0, 30))
+    return ''
+  }
+  console.log('[VECTOR] Found', data.length, 'results for:', query.substring(0, 30))
+  return data.map(r => `[${r.category}] ${r.title}: ${r.content}`).join('\n\n')
+}
+
+async function generateGeminiResponse(context, message) {
+  const { GoogleGenerativeAI } = await import('@google/generative-ai')
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+  const result = await model.generateContent({
+    contents: [{ role: 'user', parts: [{ text: message }] }],
+    systemInstruction: { parts: [{ text: `${CHAT_SYSTEM_PROMPT}\n\nKnowledge base:\n${context}` }] },
+    generationConfig: { temperature: 0.3, maxOutputTokens: 256 },
+  })
+  return result.response.text() || ''
+}
+
+async function generateOpenAIResponse(context, message) {
+  const { default: OpenAI } = await import('openai')
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',
+    messages: [
+      { role: 'system', content: `${CHAT_SYSTEM_PROMPT}\n\nKnowledge base:\n${context}` },
+      { role: 'user', content: message },
+    ],
+    temperature: 0.3,
+    max_tokens: 256,
+  })
+  return completion.choices[0]?.message?.content || ''
+}
+
+async function generateGroqResponse(context, message) {
+  const { default: Groq } = await import('groq-sdk')
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+  const completion = await groq.chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    messages: [
+      { role: 'system', content: `${CHAT_SYSTEM_PROMPT}\n\nKnowledge base:\n${context}` },
+      { role: 'user', content: message },
+    ],
+    temperature: 0.3,
+    max_tokens: 256,
+  })
+  return completion.choices[0]?.message?.content || ''
+}
+
+const CHAT_FALLBACK = "I'm temporarily unavailable, please try again later."
+
 app.use('/api/chat', async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
   try {
     const { message } = req.body
     if (!message) return res.status(400).json({ error: 'Message is required' })
 
-    if (!process.env.OPENAI_API_KEY) {
-      const responses = {
-        hello: 'Hello! I\'m your Fira Tech assistant. How can I help you today?',
-        service: 'At Fira Tech, we offer comprehensive digital solutions including web development, mobile apps, and digital transformation consulting.',
-        blog: 'Check out our latest posts about technology and heritage on our blogs page!',
-        contact: 'You can reach us through our contact form or email us directly.',
-        heritage: 'Cultural heritage is at the heart of what we do at Fira Tech.',
-        ethiopia: 'Ethiopia and Africa are experiencing incredible technological growth!',
-        default: 'Thank you for your question! Feel free to ask about our services, blog posts, or digital projects.'
-      }
-      const lower = message.toLowerCase()
-      let response = responses.default
-      for (const [key, value] of Object.entries(responses)) {
-        if (lower.includes(key)) { response = value; break }
-      }
-      return res.status(200).json({ response })
+    let context = ''
+    try {
+      context = await chatVectorSearch(message)
+    } catch (err) {
+      console.error('[CHAT] Search error:', err.message?.substring(0, 200))
     }
 
-    const { generateText } = await import('ai')
-    const { openai } = await import('@ai-sdk/openai')
-    const { data: blogs } = await supabase
-      .from('blogs').select('title, content').eq('published', true).limit(5)
+    if (!context) {
+      return res.status(200).json({ response: CHAT_FALLBACK })
+    }
 
-    const context = (blogs || []).map(b => `Blog: ${b.title}\nContent: ${b.content.substring(0, 500)}`).join('\n\n')
-    const { text } = await generateText({
-      model: openai('gpt-4-turbo'),
-      system: `You are an AI assistant for Fira Tech. Use blog content: ${context}`,
-      prompt: message,
-    })
-    return res.status(200).json({ response: text })
+    let response = ''
+
+    if (process.env.GROQ_API_KEY) {
+      try { response = await generateGroqResponse(context, message) }
+      catch (err) { console.error('[CHAT] Groq error:', err.message?.substring(0, 100)) }
+    }
+
+    if (!response && process.env.GEMINI_API_KEY) {
+      try { response = await generateGeminiResponse(context, message) }
+      catch (err) { console.error('[CHAT] Gemini error:', err.message?.substring(0, 100)) }
+    }
+
+    if (!response && process.env.OPENAI_API_KEY) {
+      try { response = await generateOpenAIResponse(context, message) }
+      catch (err) { console.error('[CHAT] OpenAI error:', err.message?.substring(0, 100)) }
+    }
+
+    if (!response) {
+      response = CHAT_FALLBACK
+    }
+
+    return res.status(200).json({ response })
   } catch (error) {
-    return res.status(200).json({ response: 'I apologize, but I\'m having trouble connecting right now.' })
+    console.error('[CHAT] Fatal error:', error.message)
+    return res.status(200).json({ response: CHAT_FALLBACK })
   }
 })
 

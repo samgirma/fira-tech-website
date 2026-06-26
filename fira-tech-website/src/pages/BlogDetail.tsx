@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowLeft, Calendar, User, MessageCircle, Share2, Bookmark } from 'lucide-react'
+import { ChatAssistant } from '@/components/ChatAssistant'
 
 interface BlogPost {
   id: string
@@ -139,6 +140,7 @@ export default function BlogDetailPage() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-background/40 backdrop-blur-sm relative overflow-hidden">
       <div className="absolute inset-0 oromo-pattern opacity-10" />
       
@@ -308,5 +310,7 @@ export default function BlogDetailPage() {
         </motion.section>
       </div>
     </div>
+    <ChatAssistant />
+    </>
   )
 }

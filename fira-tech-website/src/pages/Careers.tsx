@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Briefcase, MapPin, Clock, Users, Send } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
+import { ChatAssistant } from '@/components/ChatAssistant'
 
 interface Job {
   id: string
@@ -130,6 +131,7 @@ export default function Careers() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-b from-background to-background/95">
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-r from-forest/10 to-accent/10">
@@ -270,5 +272,7 @@ export default function Careers() {
         </div>
       </div>
     </div>
+    <ChatAssistant />
+    </>
   )
 }

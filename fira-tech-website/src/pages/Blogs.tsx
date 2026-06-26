@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Search, Calendar, User, MessageCircle, ArrowRight, X, Share2, Bookmark } from 'lucide-react'
+import { ChatAssistant } from '@/components/ChatAssistant'
 
 interface Blog {
   id: string
@@ -410,6 +411,7 @@ export default function BlogsPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      <ChatAssistant />
     </div>
   )
 }

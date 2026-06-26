@@ -1,7 +1,209 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
-import { openai } from '@ai-sdk/openai'
-import { generateText, embed } from 'ai'
-import { supabase } from '../../lib/supabase'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!
+)
+
+const SYSTEM_PROMPT = `You are the Fira Tech AI assistant. Answer questions about Fira Tech based ONLY on the provided knowledge base context.
+
+Rules:
+- Give short, precise answers (1-3 sentences max)
+- Greet politely when the user greets you
+- If the user asks something outside Fira Tech, politely say you can only provide answers related to Fira Tech Solutions
+- Never fabricate information — only use what's in the context
+- If the context doesn't contain enough info, say so briefly
+- No filler, no lengthy explanations
+- Be direct and factual`
+
+const FALLBACK = "I'm temporarily unavailable, please try again later."
+
+// ─── Embedding ─────────────────────────────────────────────────────
+// Priority: Gemini → OpenAI → Groq (Groq uses llama to embed via completion trick)
+
+async function generateEmbeddingGemini(text: string): Promise<number[]> {
+  const { GoogleGenerativeAI } = await import('@google/generative-ai')
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+  const model = genAI.getGenerativeModel({ model: 'text-embedding-004' }) // more stable than gemini-embedding-001
+  const res = await model.embedContent(text)
+  const values = res.embedding.values
+  // Pad or trim to 1536 to match your Supabase column
+  if (values.length >= 1536) return values.slice(0, 1536)
+  return [...values, ...new Array(1536 - values.length).fill(0)]
+}
+
+async function generateEmbeddingOpenAI(text: string): Promise<number[]> {
+  const { default: OpenAI } = await import('openai')
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  const res = await openai.embeddings.create({
+    model: 'text-embedding-3-small',
+    input: text,
+    dimensions: 1536,
+  })
+  return res.data[0].embedding
+}
+
+// Groq doesn't have a native embedding API — fallback: keyword-based search
+// This triggers only if both Gemini and OpenAI embedding fail
+async function generateEmbeddingFallback(text: string): Promise<number[] | null> {
+  // Return null to signal: skip vector search, use keyword match instead
+  console.warn('[EMBED] All embedding providers failed — falling back to keyword search')
+  return null
+}
+
+async function generateEmbedding(text: string): Promise<number[] | null> {
+  // 1. Try Gemini
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      const vec = await generateEmbeddingGemini(text)
+      console.log('[EMBED] Gemini OK')
+      return vec
+    } catch (err) {
+      console.error('[EMBED] Gemini failed:', (err as Error).message)
+    }
+  }
+
+  // 2. Try OpenAI
+  if (process.env.OPENAI_API_KEY) {
+    try {
+      const vec = await generateEmbeddingOpenAI(text)
+      console.log('[EMBED] OpenAI OK')
+      return vec
+    } catch (err) {
+      console.error('[EMBED] OpenAI failed:', (err as Error).message)
+    }
+  }
+
+  // 3. No embedding available
+  return generateEmbeddingFallback(text)
+}
+
+// ─── Vector Search ─────────────────────────────────────────────────
+
+async function searchKnowledgeBase(query: string): Promise<string> {
+  const embedding = await generateEmbedding(query)
+
+  // Embedding succeeded — do vector search
+  if (embedding) {
+    const pgVec = '[' + embedding.join(',') + ']'
+    const { data, error } = await supabase.rpc('search_knowledge_base', {
+      query_embedding: pgVec,
+      match_count: 5,
+      match_threshold: 0.3,
+    })
+    if (!error && data && data.length > 0) {
+      console.log(`[VECTOR] Found ${data.length} results`)
+      return data
+        .map((r: { category: string; title: string; content: string }) =>
+          `[${r.category}] ${r.title}: ${r.content}`
+        )
+        .join('\n\n')
+    }
+    console.warn('[VECTOR] No results or error:', error?.message)
+  }
+
+  // Embedding failed — fallback: full-text / keyword search in Supabase
+  console.log('[SEARCH] Trying keyword search fallback...')
+  const { data, error } = await supabase
+    .from('knowledge_base') // adjust to your actual table name
+    .select('category, title, content')
+    .textSearch('content', query, { type: 'plain' })
+    .limit(5)
+
+  if (!error && data && data.length > 0) {
+    console.log(`[KEYWORD] Found ${data.length} results`)
+    return data
+      .map((r: { category: string; title: string; content: string }) =>
+        `[${r.category}] ${r.title}: ${r.content}`
+      )
+      .join('\n\n')
+  }
+
+  console.warn('[SEARCH] No results from any method')
+  return ''
+}
+
+// ─── AI Generation ─────────────────────────────────────────────────
+// Priority: Groq (free, reliable) → Gemini → OpenAI
+
+async function generateWithGroq(context: string, message: string): Promise<string> {
+  const { default: Groq } = await import('groq-sdk')
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+  const completion = await groq.chat.completions.create({
+    model: 'llama-3.3-70b-versatile',  // free, high quality
+    messages: [
+      { role: 'system', content: `${SYSTEM_PROMPT}\n\nKnowledge base:\n${context}` },
+      { role: 'user', content: message },
+    ],
+    temperature: 0.3,
+    max_tokens: 256,
+  })
+  return completion.choices[0]?.message?.content || ''
+}
+
+async function generateWithGemini(context: string, message: string): Promise<string> {
+  const { GoogleGenerativeAI } = await import('@google/generative-ai')
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' }) // stable free-tier model
+  const result = await model.generateContent({
+    contents: [{ role: 'user', parts: [{ text: message }] }],
+    systemInstruction: { parts: [{ text: `${SYSTEM_PROMPT}\n\nKnowledge base:\n${context}` }] },
+    generationConfig: { temperature: 0.3, maxOutputTokens: 256 },
+  })
+  return result.response.text() || ''
+}
+
+async function generateWithOpenAI(context: string, message: string): Promise<string> {
+  const { default: OpenAI } = await import('openai')
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',
+    messages: [
+      { role: 'system', content: `${SYSTEM_PROMPT}\n\nKnowledge base:\n${context}` },
+      { role: 'user', content: message },
+    ],
+    temperature: 0.3,
+    max_tokens: 256,
+  })
+  return completion.choices[0]?.message?.content || ''
+}
+
+async function generateResponse(context: string, message: string): Promise<string> {
+  // 1. Groq first — free and reliable
+  if (process.env.GROQ_API_KEY) {
+    try {
+      const res = await generateWithGroq(context, message)
+      if (res) { console.log('[CHAT] Groq OK'); return res }
+    } catch (err) {
+      console.error('[CHAT] Groq error:', (err as Error).message)
+    }
+  }
+
+  // 2. Gemini fallback
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      const res = await generateWithGemini(context, message)
+      if (res) { console.log('[CHAT] Gemini OK'); return res }
+    } catch (err) {
+      console.error('[CHAT] Gemini error:', (err as Error).message)
+    }
+  }
+
+  // 3. OpenAI last resort
+  if (process.env.OPENAI_API_KEY) {
+    try {
+      const res = await generateWithOpenAI(context, message)
+      if (res) { console.log('[CHAT] OpenAI OK'); return res }
+    } catch (err) {
+      console.error('[CHAT] OpenAI error:', (err as Error).message)
+    }
+  }
+
+  return ''
+}
+
+// ─── Handler ───────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -10,74 +212,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const { message } = req.body
-    
-    if (!message) {
+    if (!message || typeof message !== 'string') {
       return res.status(400).json({ error: 'Message is required' })
     }
-    
-    // Check if OpenAI API key is available
-    if (!process.env.OPENAI_API_KEY) {
-      // Fallback to mock responses if OpenAI is not configured
-      const mockResponses = {
-        'hello': 'Hello! I\'m your Fira Tech assistant. How can I help you today? I can tell you about our services, technology solutions, or answer questions about digital innovation in Africa.',
-        'service': 'At Fira Tech, we offer comprehensive digital solutions including web development, mobile apps, digital transformation consulting, and community-focused technology platforms. We specialize in creating solutions that blend modern technology with cultural heritage preservation.',
-        'blog': 'We have several blog posts about technology and heritage! You can check out our latest posts about "Building Digital Communities in Ethiopia" and "The Future of African Tech Innovation" on our blogs page.',
-        'contact': 'You can reach us through our contact form on the website, or email us directly. We\'re based in Adama, Ethiopia and would love to discuss how we can help bring your digital ideas to life!',
-        'heritage': 'Cultural heritage is at the heart of what we do at Fira Tech. We believe technology should enhance and preserve cultural traditions, not replace them. Our projects focus on creating digital platforms that celebrate African heritage while enabling modern innovation.',
-        'ethiopia': 'Ethiopia and Africa are experiencing incredible technological growth! We\'re proud to be part of this transformation, creating solutions that address local challenges while connecting communities to global opportunities.',
-        'default': 'Thank you for your question! I\'m here to help you learn about Fira Tech and our mission to blend technology with heritage. Feel free to ask me about our services, blog posts, or how we can help with your digital projects.'
-      }
-      
-      const lowerMessage = message.toLowerCase()
-      let response = mockResponses.default
-      
-      for (const [key, value] of Object.entries(mockResponses)) {
-        if (lowerMessage.includes(key)) {
-          response = value
-          break
-        }
-      }
-      
-      return res.status(200).json({ response })
+
+    // Step 1: Retrieve context
+    let context = ''
+    try {
+      context = await searchKnowledgeBase(message)
+    } catch (err) {
+      console.error('[SEARCH] Fatal error:', err)
     }
-    
-    // Generate embedding for the user query
-    const { embedding: queryEmbedding } = await embed({
-      model: openai.embedding('text-embedding-3-small'),
-      value: message,
-    })
-    
-    // Search for relevant blog content using Supabase
-    const { data: blogs, error } = await supabase
-      .from('blogs')
-      .select('title, content, author:users(name)')
-      .eq('published', true)
-      .limit(5) // Limit context for AI
-    
-    if (error) throw error
-    
-    // Create context from blog content
-    const context = blogs.map(blog => 
-      `Blog: ${blog.title}\nContent: ${blog.content.substring(0, 500)}...\nAuthor: ${blog.author?.name || 'Unknown'}`
-    ).join('\n\n')
-    
-    // Generate AI response with context
-    const { text } = await generateText({
-      model: openai('gpt-4-turbo'),
-      system: `You are an AI assistant for Fira Tech, a technology company based in Ethiopia that blends modern technology with cultural heritage. Use the provided blog content to answer user questions. If the information isn't in the context, say so politely. Be helpful, conversational, and highlight Fira Tech's mission and values.
-      
-      Available blog content:
-      ${context}`,
-      prompt: message,
-    })
-    
-    return res.status(200).json({ response: text })
-  } catch (error) {
-    console.error('Error in AI chat:', error)
-    
-    // Fallback response on error
-    return res.status(200).json({ 
-      response: 'I apologize, but I\'m having trouble connecting to my AI services right now. I\'m your Fira Tech assistant, and I\'d be happy to help you learn about our technology solutions, heritage preservation work, or answer any questions about our services. Could you try again or let me know what specific information you\'re looking for?'
-    })
+
+    if (!context) {
+      return res.status(200).json({ response: FALLBACK })
+    }
+
+    // Step 2: Generate answer
+    const response = (await generateResponse(context, message)) || FALLBACK
+
+    return res.status(200).json({ response })
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error('[HANDLER] Fatal error:', msg)
+    return res.status(200).json({ response: FALLBACK })
   }
 }
