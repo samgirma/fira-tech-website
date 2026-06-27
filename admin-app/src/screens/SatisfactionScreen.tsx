@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Share } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Share, Clipboard } from 'react-native'
 import { supabase } from '../services/supabase'
 import { colors, fonts } from '../constants/theme'
 
@@ -11,23 +11,39 @@ interface Satisfaction {
   created_at: string
 }
 
+interface Link {
+  token: string
+  created_at: string
+  expires_at: string
+}
+
 export default function SatisfactionScreen() {
   const [responses, setResponses] = useState<Satisfaction[]>([])
+  const [links, setLinks] = useState<Link[]>([])
   const [loading, setLoading] = useState(true)
+  const [generating, setGenerating] = useState(false)
   const [stats, setStats] = useState({ average: 0, total: 0, percentage: 0 })
 
-  const fetchResponses = async () => {
+  const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://firatech.systems'
+
+  const fetchData = async () => {
     setLoading(true)
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token
       const [res, statsRes] = await Promise.all([
-        fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/admin/satisfaction`, {
+        fetch(`${API_BASE}/api/admin/satisfaction`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/satisfaction`),
+        fetch(`${API_BASE}/api/satisfaction`),
       ])
       if (res.ok) setResponses(await res.json())
       if (statsRes.ok) setStats(await statsRes.json())
+
+      // Fetch links
+      const linksRes = await fetch(`${API_BASE}/api/admin/satisfaction/links`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (linksRes.ok) setLinks(await linksRes.json())
     } catch (err) {
       console.error(err)
     } finally {
@@ -35,7 +51,35 @@ export default function SatisfactionScreen() {
     }
   }
 
-  useEffect(() => { fetchResponses() }, [])
+  useEffect(() => { fetchData() }, [])
+
+  const handleGenerateLink = async () => {
+    setGenerating(true)
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token
+      const res = await fetch(`${API_BASE}/api/admin/satisfaction/generate-link`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('Failed to generate link')
+      const data = await res.json()
+      
+      Alert.alert('Link Generated', `Share this feedback link:\n\n${data.url}\n\nExpires: ${new Date(data.expires_at).toLocaleString()}`, [
+        { text: 'Copy Link', onPress: () => { Clipboard.setString(data.url); Alert.alert('Copied!', 'Link copied to clipboard') } },
+        { text: 'Share', onPress: async () => {
+          try { await Share.share({ message: `Share your experience with Fira Tech!\n\n${data.url}` }) }
+          catch (e) { console.error(e) }
+        }},
+        { text: 'OK' },
+      ])
+      fetchData()
+    } catch (err) {
+      Alert.alert('Error', 'Failed to generate link')
+      console.error(err)
+    } finally {
+      setGenerating(false)
+    }
+  }
 
   const handleDelete = (id: string) => {
     Alert.alert('Delete Response', 'Are you sure?', [
@@ -43,28 +87,22 @@ export default function SatisfactionScreen() {
       { text: 'Delete', style: 'destructive', onPress: async () => {
         try {
           const token = (await supabase.auth.getSession()).data.session?.access_token
-          const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/admin/satisfaction`, {
+          const res = await fetch(`${API_BASE}/api/admin/satisfaction`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ id }),
           })
-          if (res.ok) fetchResponses()
+          if (res.ok) fetchData()
         } catch (err) { console.error(err) }
       }},
     ])
   }
 
-  const handleShare = async () => {
-    try {
-      await Share.share({
-        message: `Share your experience with Fira Tech!\n\n${process.env.EXPO_PUBLIC_API_URL}/feedback`,
-      })
-    } catch (err) { console.error(err) }
-  }
-
   const renderStars = (rating: number) => {
     return '★'.repeat(rating) + '☆'.repeat(5 - rating)
   }
+
+  const activeLinks = links.filter(l => new Date(l.expires_at) > new Date())
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -85,13 +123,42 @@ export default function SatisfactionScreen() {
           </View>
         </View>
 
-        {/* Share Link Button */}
+        {/* Generate Link Button */}
         <TouchableOpacity
-          onPress={handleShare}
-          style={{ backgroundColor: colors.gold, borderRadius: 10, padding: 14, alignItems: 'center', marginBottom: 20 }}
+          onPress={handleGenerateLink}
+          disabled={generating}
+          style={{
+            backgroundColor: colors.forest,
+            borderRadius: 10, padding: 14, alignItems: 'center', marginBottom: 12,
+            opacity: generating ? 0.6 : 1,
+          }}
         >
-          <Text style={{ color: colors.obsidian, fontWeight: '600', fontSize: fonts.sizes.base }}>Share Feedback Link</Text>
+          <Text style={{ color: '#fff', fontWeight: '600', fontSize: fonts.sizes.base }}>
+            {generating ? 'Generating...' : 'Generate Expiring Link'}
+          </Text>
         </TouchableOpacity>
+
+        {/* Active Links */}
+        {activeLinks.length > 0 && (
+          <View style={{ marginBottom: 20 }}>
+            <Text style={{ color: colors.text, fontSize: fonts.sizes.sm, fontWeight: 'bold', marginBottom: 8 }}>
+              Active Links ({activeLinks.length})
+            </Text>
+            {activeLinks.map((link) => (
+              <View key={link.token} style={{
+                backgroundColor: colors.surface, borderRadius: 8, padding: 12, marginBottom: 6,
+                borderWidth: 1, borderColor: colors.border,
+              }}>
+                <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.xs, marginBottom: 4 }}>
+                  Expires: {new Date(link.expires_at).toLocaleString()}
+                </Text>
+                <Text style={{ color: colors.text, fontSize: fonts.sizes.xs }} numberOfLines={1}>
+                  {API_BASE}/feedback?token={link.token}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Responses */}
         <Text style={{ color: colors.text, fontSize: fonts.sizes.lg, fontWeight: 'bold', marginBottom: 12 }}>

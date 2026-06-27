@@ -1,15 +1,31 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSearchParams } from "react-router-dom"
 import { motion } from "framer-motion"
-import { Star, Send, Sparkles } from "lucide-react"
+import { Star, Send, Sparkles, TimerOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export default function FeedbackPage() {
+  const [searchParams] = useSearchParams()
+  const token = searchParams.get("token")
+
+  const [linkState, setLinkState] = useState<"loading" | "valid" | "expired">("loading")
   const [partnerName, setPartnerName] = useState("")
   const [rating, setRating] = useState(0)
   const [hoveredStar, setHoveredStar] = useState(0)
   const [feedback, setFeedback] = useState("")
   const [submitted, setSubmitted] = useState(false)
   const [sending, setSending] = useState(false)
+
+  useEffect(() => {
+    if (!token) {
+      setLinkState("valid")
+      return
+    }
+    fetch(`/api/satisfaction/validate-link?token=${encodeURIComponent(token)}`)
+      .then(res => res.json())
+      .then(data => setLinkState(data.valid ? "valid" : "expired"))
+      .catch(() => setLinkState("valid"))
+  }, [token])
 
   const handleSubmit = async () => {
     if (!partnerName.trim() || rating === 0) return
@@ -27,6 +43,34 @@ export default function FeedbackPage() {
     } finally {
       setSending(false)
     }
+  }
+
+  if (linkState === "loading") {
+    return (
+      <div className="min-h-screen bg-background/40 backdrop-blur-sm flex items-center justify-center p-6">
+        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (linkState === "expired") {
+    return (
+      <div className="min-h-screen bg-background/40 backdrop-blur-sm flex items-center justify-center p-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center max-w-md"
+        >
+          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <TimerOff className="w-8 h-8 text-red-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Link Expired</h2>
+          <p className="text-muted-foreground">
+            This feedback link has expired. Please contact Fira Tech for a new link.
+          </p>
+        </motion.div>
+      </div>
+    )
   }
 
   if (submitted) {

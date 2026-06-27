@@ -767,6 +767,76 @@ app.use('/api/admin/satisfaction', async (req, res) => {
   return res.status(405).json({ error: 'Method not allowed' })
 })
 
+// Satisfaction validate-link — public
+app.use('/api/satisfaction/validate-link', async (req, res) => {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
+
+  const { token } = req.query
+  if (!token) return res.status(400).json({ valid: false, error: 'Token is required' })
+
+  const { data, error } = await supabase
+    .from('settings').select('value').eq('key', 'satisfaction_links').single()
+
+  if (error || !data?.value) return res.status(200).json({ valid: false, error: 'No links found' })
+
+  const links = JSON.parse(data.value)
+  const link = links.find(l => l.token === token)
+
+  if (!link) return res.status(200).json({ valid: false, error: 'Invalid link' })
+  if (new Date(link.expires_at) < new Date()) return res.status(200).json({ valid: false, error: 'Link has expired' })
+
+  return res.status(200).json({ valid: true })
+})
+
+// Satisfaction generate-link — admin
+app.use('/api/admin/satisfaction/generate-link', async (req, res) => {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+
+  const { data: { user } } = await supabase.auth.getUser(
+    req.headers.authorization?.replace('Bearer ', '')
+  )
+  if (!user) return res.status(401).json({ error: 'Unauthorized' })
+  const { data: profile } = await supabase
+    .from('profiles').select('role').eq('id', user.id).single()
+  if (profile?.role !== 'ADMIN') return res.status(403).json({ error: 'Forbidden' })
+
+  const token = Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 10)
+  const now = new Date()
+  const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+
+  const { data: existing } = await supabase
+    .from('settings').select('value').eq('key', 'satisfaction_links').single()
+  const links = existing?.value ? JSON.parse(existing.value) : []
+  links.push({ token, created_at: now.toISOString(), expires_at: expiresAt.toISOString() })
+
+  const { error: upsertError } = await supabase
+    .from('settings').upsert({ key: 'satisfaction_links', value: JSON.stringify(links) }, { onConflict: 'key' })
+  if (upsertError) return res.status(500).json({ error: upsertError.message })
+
+  const origin = req.headers.origin || `http://localhost:${PORT}`
+  const url = `${origin}/feedback?token=${token}`
+  return res.status(201).json({ token, url, expires_at: expiresAt.toISOString() })
+})
+
+// Satisfaction links listing — admin
+app.use('/api/admin/satisfaction/links', async (req, res) => {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
+
+  const { data: { user } } = await supabase.auth.getUser(
+    req.headers.authorization?.replace('Bearer ', '')
+  )
+  if (!user) return res.status(401).json({ error: 'Unauthorized' })
+  const { data: profile } = await supabase
+    .from('profiles').select('role').eq('id', user.id).single()
+  if (profile?.role !== 'ADMIN') return res.status(403).json({ error: 'Forbidden' })
+
+  const { data, error } = await supabase
+    .from('settings').select('value').eq('key', 'satisfaction_links').single()
+  if (error || !data?.value) return res.status(200).json([])
+  try { return res.status(200).json(JSON.parse(data.value)) }
+  catch { return res.status(200).json([]) }
+})
+
 // Image upload to Cloudinary
 app.use('/api/upload', async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
