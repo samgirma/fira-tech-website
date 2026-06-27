@@ -12,7 +12,7 @@ export default defineConfig({
   server: {
     host: "::",
     port: 5173,
-    allowedHosts: ["scales-copper-titten-stuart.trycloudflare.com"],
+    allowedHosts: ["impacts-latex-blue-possibly.trycloudflare.com"],
     hmr: {
       overlay: false,
     },

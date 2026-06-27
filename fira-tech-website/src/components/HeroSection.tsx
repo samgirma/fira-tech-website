@@ -1,9 +1,158 @@
-import { motion } from "framer-motion";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight, Sparkles, Users, Briefcase, Star, X, MapPin, Globe, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import heroImage from "@/assets/hero-oda-tree.jpg";
 
+interface StatItem {
+  id: string
+  name: string
+  description: string
+  logo?: string
+  location?: string
+  website?: string
+  preview?: string
+  link?: string
+}
+
+interface StatCategory {
+  id: string
+  key: string
+  label: string
+  icon: string
+  items: StatItem[]
+  dynamicItems?: { id: string; partner_name: string; rating: number; feedback: string }[]
+  dynamicValue?: number
+  dynamicLabel?: string
+}
+
+const ICON_MAP: Record<string, React.ElementType> = {
+  Users, Briefcase, Star,
+}
+
+function PartnerCard({ item }: { item: StatItem }) {
+  return (
+    <div className="flex gap-4 p-4 rounded-xl bg-forest/5 border border-forest/10">
+      {item.logo && (
+        <img
+          src={item.logo}
+          alt={item.name}
+          className="w-16 h-16 rounded-lg object-cover flex-shrink-0 bg-background"
+        />
+      )}
+      <div className="flex-1 min-w-0">
+        <h4 className="text-foreground font-semibold">{item.name}</h4>
+        {item.description && (
+          <p className="text-muted-foreground text-sm mt-1">{item.description}</p>
+        )}
+        <div className="flex flex-wrap gap-3 mt-2">
+          {item.location && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin className="w-3 h-3" />
+              {item.location}
+            </span>
+          )}
+          {item.website && (
+            <a
+              href={item.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
+              className="flex items-center gap-1 text-xs text-accent hover:text-accent/80 transition-colors"
+            >
+              <Globe className="w-3 h-3" />
+              Website
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ProjectCard({ item }: { item: StatItem }) {
+  return (
+    <div className="flex gap-4 p-4 rounded-xl bg-forest/5 border border-forest/10">
+      {item.preview && (
+        <img
+          src={item.preview}
+          alt={item.name}
+          className="w-24 h-16 rounded-lg object-cover flex-shrink-0 bg-background"
+        />
+      )}
+      <div className="flex-1 min-w-0">
+        <h4 className="text-foreground font-semibold">{item.name}</h4>
+        {item.description && (
+          <p className="text-muted-foreground text-sm mt-1">{item.description}</p>
+        )}
+        {item.link && (
+          <a
+            href={item.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={e => e.stopPropagation()}
+            className="inline-flex items-center gap-1 text-xs text-accent hover:text-accent/80 transition-colors mt-2"
+          >
+            <ExternalLink className="w-3 h-3" />
+            View Project
+          </a>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function TestimonialCard({ item }: { item: StatItem }) {
+  return (
+    <div className="p-4 rounded-xl bg-forest/5 border border-forest/10">
+      <p className="text-muted-foreground text-sm italic leading-relaxed">
+        "{item.description}"
+      </p>
+      <p className="text-foreground font-medium text-sm mt-3">— {item.name}</p>
+    </div>
+  )
+}
+
 export function HeroSection() {
+  const [categories, setCategories] = useState<StatCategory[]>([])
+  const [selected, setSelected] = useState<StatCategory | null>(null)
+
+  useEffect(() => {
+    fetch('/api/site-stats')
+      .then(res => res.json())
+      .then(data => setCategories(Array.isArray(data) ? data : []))
+      .catch(() => {})
+  }, [])
+
+  const StatIcon = ({ icon }: { icon: string }) => {
+    const Icon = ICON_MAP[icon]
+    return Icon ? <Icon className="w-5 h-5" /> : null
+  }
+
+  const renderItem = (item: StatItem) => {
+    switch (selected?.key) {
+      case 'community_partners':
+        return <PartnerCard item={item} />
+      case 'projects_delivered':
+        return <ProjectCard item={item} />
+      default:
+        return <TestimonialCard item={item} />
+    }
+  }
+
+  const getCount = (cat: StatCategory) => {
+    const base = cat.items.length
+    const extra = cat.dynamicItems?.length || 0
+    const total = base + extra
+    return total > 50 ? `${total}+` : total
+  }
+
+  const getLabel = (cat: StatCategory) => {
+    if (cat.dynamicLabel) return cat.dynamicLabel
+    return cat.label
+  }
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image with Overlay */}
@@ -86,21 +235,107 @@ export function HeroSection() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 1 }}
-            className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto"
+            className="mt-16 flex flex-wrap justify-center gap-8 max-w-lg mx-auto"
           >
-            {[
-              { value: "50+", label: "Community Partners" },
-              { value: "12", label: "Projects Delivered" },
-              { value: "99%", label: "Client Satisfaction" },
-            ].map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="text-2xl md:text-3xl font-bold text-accent">{stat.value}</div>
-                <div className="text-xs md:text-sm text-muted-foreground mt-1">{stat.label}</div>
-              </div>
+            {categories.filter(cat => cat.items.length > 0 || (cat.dynamicItems && cat.dynamicItems.length > 0)).map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelected(cat)}
+                className="text-center group cursor-pointer hover:scale-105 transition-transform duration-200"
+              >
+                <div className="text-2xl md:text-3xl font-bold text-accent group-hover:text-foreground transition-colors">
+                  {getCount(cat)}
+                </div>
+                <div className="text-xs md:text-sm text-muted-foreground mt-1 group-hover:text-accent transition-colors flex items-center justify-center gap-1">
+                  <StatIcon icon={cat.icon} />
+                  {getLabel(cat)}
+                </div>
+              </button>
             ))}
           </motion.div>
         </motion.div>
       </div>
+
+      {/* Stat Detail Modal */}
+      <AnimatePresence>
+        {selected && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelected(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ duration: 0.2 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-card border border-forest/20 rounded-2xl p-8 max-w-xl w-full shadow-2xl max-h-[80vh] overflow-y-auto"
+            >
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  {selected.dynamicValue ? (
+                    <>
+                      <div className="text-4xl font-bold text-accent mb-1">{selected.dynamicValue}%</div>
+                      <h3 className="text-xl font-semibold text-foreground">{selected.dynamicLabel || selected.label}</h3>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-4xl font-bold text-accent mb-1">
+                        {selected.items.length > 50 ? `${selected.items.length}+` : selected.items.length}
+                      </div>
+                      <h3 className="text-xl font-semibold text-foreground">{selected.label}</h3>
+                    </>
+                  )}
+                </div>
+                <button
+                  onClick={() => setSelected(null)}
+                  className="p-1 rounded-full hover:bg-forest/10 transition-colors"
+                >
+                  <X className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </div>
+
+              {selected.key === 'client_satisfaction' && selected.dynamicItems ? (
+                <div className="space-y-4">
+                  {selected.dynamicItems.map((item: any) => (
+                    <div key={item.id} className="p-4 rounded-xl bg-forest/5 border border-forest/10">
+                      <div className="flex items-center gap-1 text-accent mb-2">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <span key={star} className={`text-lg ${star <= item.rating ? 'text-accent' : 'text-muted-foreground/20'}`}>★</span>
+                        ))}
+                      </div>
+                      {item.feedback && (
+                        <p className="text-muted-foreground text-sm italic">"{item.feedback}"</p>
+                      )}
+                      <p className="text-foreground font-medium text-xs mt-2">— {item.partner_name}</p>
+                    </div>
+                  ))}
+                  {selected.items.map((item) => (
+                    <div key={item.id}>{renderItem(item)}</div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {selected.items.length === 0 ? (
+                    <p className="text-muted-foreground">No entries yet.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {selected.items.map((item) => (
+                        <div key={item.id}>
+                          {renderItem(item)}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Scroll Indicator */}
       <motion.div

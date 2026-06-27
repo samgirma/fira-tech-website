@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { Briefcase, MapPin, Clock, Users, Send } from 'lucide-react'
+import { ArrowLeft, Briefcase, MapPin, Clock, Users, Send } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ChatAssistant } from '@/components/ChatAssistant'
 
@@ -17,6 +18,7 @@ interface Job {
 }
 
 export default function Careers() {
+  const navigate = useNavigate()
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -75,7 +77,14 @@ export default function Careers() {
 
   if (loading) {
     return (
-    <div className="min-h-screen bg-background/40 backdrop-blur-sm">
+    <div className="min-h-screen bg-background/40 backdrop-blur-sm relative">
+        <button
+          onClick={() => navigate('/')}
+          className="fixed top-4 left-4 z-50 p-2 rounded-full bg-background/60 backdrop-blur-sm border border-forest/20 hover:bg-forest/10 transition-all"
+          aria-label="Back to home"
+        >
+          <ArrowLeft className="w-5 h-5 text-foreground" />
+        </button>
         <div className="relative overflow-hidden bg-gradient-to-r from-forest/10 to-accent/10">
           <div className="container-fira px-6 py-24">
             <div className="text-center max-w-4xl mx-auto space-y-4">
@@ -112,7 +121,14 @@ export default function Careers() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-background/95 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-background to-background/95 flex items-center justify-center relative">
+        <button
+          onClick={() => navigate('/')}
+          className="fixed top-4 left-4 z-50 p-2 rounded-full bg-background/60 backdrop-blur-sm border border-forest/20 hover:bg-forest/10 transition-all"
+          aria-label="Back to home"
+        >
+          <ArrowLeft className="w-5 h-5 text-foreground" />
+        </button>
         <div className="text-center max-w-md">
           <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <Briefcase className="w-8 h-8 text-destructive" />
@@ -133,6 +149,13 @@ export default function Careers() {
   return (
     <>
     <div className="min-h-screen bg-gradient-to-b from-background to-background/95">
+      <button
+        onClick={() => navigate('/')}
+        className="fixed top-4 left-4 z-50 p-2 rounded-full bg-background/60 backdrop-blur-sm border border-forest/20 hover:bg-forest/10 transition-all"
+        aria-label="Back to home"
+      >
+        <ArrowLeft className="w-5 h-5 text-foreground" />
+      </button>
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-r from-forest/10 to-accent/10">
         <div className="container-fira px-6 py-24">

@@ -11,13 +11,48 @@ const SYSTEM_PROMPT = `You are the Fira Tech AI assistant. Answer questions abou
 Rules:
 - Give short, precise answers (1-3 sentences max)
 - Greet politely when the user greets you
+- For greetings, reply with a simple greeting only; do not mention links or the homepage unless asked
+- If the user asks about a page or section on the site, return the exact link
+- Include homepage links for about/home questions
 - If the user asks something outside Fira Tech, politely say you can only provide answers related to Fira Tech Solutions
+- If the user asks for confidential, internal, secret, or admin-only company information, refuse and direct them to the admin
 - Never fabricate information — only use what's in the context
+- Never use firatech.com; the official domain is https://firatech.systems
 - If the context doesn't contain enough info, say so briefly
 - No filler, no lengthy explanations
 - Be direct and factual`
 
 const FALLBACK = "I'm temporarily unavailable, please try again later."
+const ADMIN_FALLBACK = "This information is not intended for public support. Please contact the admin for details about Fira Tech Solutions."
+
+function isConfidentialQuestion(message: string): boolean {
+  return /(sensitive|secret|secrets|confidential|internal|private|password|api key|token|credential|credentials|admin login|source code|database|revenue|salary|budget|members count|staff count|employee count)/i.test(message)
+}
+
+function isGreeting(message: string): boolean {
+  return /^(hi|hello|hey|good\s*(morning|afternoon|evening))/i.test(message.trim())
+}
+
+function isLikelyFiraQuestion(message: string): boolean {
+  return /(fira|service|services|blog|blogs|career|careers|job|jobs|hiring|contact|support|about|home|homepage|telebirr|cbe|birr|location|admin|comment|comments|payment|payments)/i.test(message)
+}
+
+function getPageLinkResponse(message: string): string {
+  const lower = message.toLowerCase()
+  if (/\bblog\b|\bblogs\b|\bposts\b|\barticles\b/.test(lower)) {
+    return 'You can find our blogs here: https://firatech.systems/blogs'
+  }
+  if (/\babout\b|\bhome\b|\bhomepage\b|\bstart\b|\bwho are you\b/.test(lower)) {
+    return 'You can find our homepage here: https://firatech.systems/'
+  }
+  if (/\bcareer\b|\bcareers\b|\bjob\b|\bjobs\b|\bhiring\b|\bopenings\b/.test(lower)) {
+    return 'You can find our careers page here: https://firatech.systems/careers'
+  }
+  if (/\bcontact\b|\bsupport\b|\breach\s*out\b|\bget in touch\b/.test(lower)) {
+    return 'You can find our contact section here: https://firatech.systems/#contact'
+  }
+  return ''
+}
 
 // ─── Embedding ─────────────────────────────────────────────────────
 // Priority: Gemini → OpenAI → Groq (Groq uses llama to embed via completion trick)
@@ -216,6 +251,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Message is required' })
     }
 
+    if (process.env.CHAT_ENABLE_RULES === 'true' && isGreeting(message)) {
+      return res.status(200).json({ response: 'Hello, how can I assist you with Fira Tech today?' })
+    }
+
+    if (process.env.CHAT_ENABLE_RULES === 'true' && isConfidentialQuestion(message)) {
+      return res.status(200).json({ response: ADMIN_FALLBACK })
+    }
+
+    if (process.env.CHAT_ENABLE_RULES === 'true' && !isLikelyFiraQuestion(message)) {
+      return res.status(200).json({ response: ADMIN_FALLBACK })
+    }
+
+    const pageLink = getPageLinkResponse(message)
+    if (process.env.CHAT_ENABLE_RULES === 'true' && pageLink) {
+      return res.status(200).json({ response: pageLink })
+    }
+
     // Step 1: Retrieve context
     let context = ''
     try {
@@ -225,11 +277,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (!context) {
-      return res.status(200).json({ response: FALLBACK })
+      console.log('[SEARCH] No context returned')
     }
 
     // Step 2: Generate answer
-    const response = (await generateResponse(context, message)) || FALLBACK
+    let response = (await generateResponse(context, message)) || FALLBACK
+
+    response = response.replace(/firatech\.com/gi, 'firatech.systems')
 
     return res.status(200).json({ response })
   } catch (error: unknown) {

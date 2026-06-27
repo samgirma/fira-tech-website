@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Search, Calendar, User, MessageCircle, ArrowRight, X, Share2, Bookmark } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowLeft, Search, Calendar, User, MessageCircle, ArrowRight, X, Share2, Bookmark } from 'lucide-react'
 import { ChatAssistant } from '@/components/ChatAssistant'
 
 interface Blog {
@@ -25,6 +26,7 @@ interface Blog {
 }
 
 export default function BlogsPage() {
+  const navigate = useNavigate()
   const [blogs, setBlogs] = useState<Blog[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -97,6 +99,13 @@ export default function BlogsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background/40 backdrop-blur-sm relative overflow-hidden">
+        <button
+          onClick={() => navigate('/')}
+          className="fixed top-4 left-4 z-50 p-2 rounded-full bg-background/60 backdrop-blur-sm border border-forest/20 hover:bg-forest/10 transition-all"
+          aria-label="Back to home"
+        >
+          <ArrowLeft className="w-5 h-5 text-foreground" />
+        </button>
         <div className="absolute inset-0 oromo-pattern opacity-10" />
         <div className="relative z-10">
           <section className="py-20 px-6">
@@ -131,6 +140,13 @@ export default function BlogsPage() {
 
   return (
     <div className="min-h-screen bg-background/40 backdrop-blur-sm relative overflow-hidden">
+      <button
+        onClick={() => navigate('/')}
+        className="fixed top-4 left-4 z-50 p-2 rounded-full bg-background/60 backdrop-blur-sm border border-forest/20 hover:bg-forest/10 transition-all"
+        aria-label="Back to home"
+      >
+        <ArrowLeft className="w-5 h-5 text-foreground" />
+      </button>
       <div className="absolute inset-0 oromo-pattern opacity-10" />
       <div className="relative z-10">
         {/* Hero Section */}

@@ -8,17 +8,21 @@ import BlogsScreen from '../screens/BlogsScreen'
 import CommentsScreen from '../screens/CommentsScreen'
 import JobsScreen from '../screens/JobsScreen'
 import SocialLinksScreen from '../screens/SocialLinksScreen'
+import StatsScreen from '../screens/StatsScreen'
 import MessagesScreen from '../screens/MessagesScreen'
+import SatisfactionScreen from '../screens/SatisfactionScreen'
 
 const Tab = createBottomTabNavigator()
 
 const tabIcons: Record<string, string> = {
   Dashboard: '📊',
+  Stats: '📈',
   Blogs: '📝',
   Comments: '💬',
   Jobs: '💼',
   'Social Links': '🔗',
   Messages: '📨',
+  Satisfaction: '⭐',
 }
 
 function TabIcon({ routeName, color, size, badge }: { routeName: string; color: string; size: number; badge?: number }) {
@@ -90,6 +94,11 @@ export default function TabNavigator({ onLogout }: { onLogout: () => void }) {
         {() => <DashboardScreen onLogout={onLogout} />}
       </Tab.Screen>
       <Tab.Screen
+        name="Stats"
+        component={StatsScreen}
+        options={{ headerShown: false }}
+      />
+      <Tab.Screen
         name="Blogs"
         component={BlogsScreen}
         options={{ headerShown: false }}
@@ -106,6 +115,7 @@ export default function TabNavigator({ onLogout }: { onLogout: () => void }) {
         options={{ headerShown: false }}
       />
       <Tab.Screen name="Messages" component={MessagesScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Satisfaction" component={SatisfactionScreen} options={{ headerShown: false }} />
     </Tab.Navigator>
   )
 }

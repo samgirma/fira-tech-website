@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Blogs from "./pages/Blogs";
 import BlogDetail from "./pages/BlogDetail";
 import Careers from "./pages/Careers";
+import FeedbackPage from "./pages/FeedbackPage";
 import NotFound from "./pages/NotFound";
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -51,6 +52,7 @@ const App = () => {
                 <Route path="/blogs" element={<Blogs />} />
                 <Route path="/blog/:slug" element={<BlogDetail />} />
                 <Route path="/careers" element={<Careers />} />
+                <Route path="/feedback" element={<FeedbackPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
