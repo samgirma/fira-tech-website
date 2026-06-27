@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, RefreshControl, TextInput, Alert,
-  Modal, KeyboardAvoidingView, Platform, Image,
+  Modal, KeyboardAvoidingView, Platform, Image, Share, Clipboard,
 } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { supabase } from '../services/supabase'
@@ -27,6 +27,20 @@ interface StatCategory {
   label: string
   icon: string
   items: StatItem[]
+}
+
+interface SatisfactionResponse {
+  id: string
+  partner_name: string
+  rating: number
+  feedback: string
+  created_at: string
+}
+
+interface SatisfactionLink {
+  token: string
+  created_at: string
+  expires_at: string
 }
 
 const TABS = [
@@ -93,6 +107,12 @@ export default function StatsScreen() {
   const [itemLink, setItemLink] = useState('')
   const [saving, setSaving] = useState(false)
 
+  // Satisfaction state
+  const [satisfactionStats, setSatisfactionStats] = useState({ average: 0, total: 0, percentage: 0 })
+  const [responses, setResponses] = useState<SatisfactionResponse[]>([])
+  const [links, setLinks] = useState<SatisfactionLink[]>([])
+  const [generatingLink, setGeneratingLink] = useState(false)
+
   const fetchStats = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -110,6 +130,36 @@ export default function StatsScreen() {
       setLoading(false)
     }
   }, [])
+
+  const fetchSatisfactionData = useCallback(async () => {
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token
+      const [statsRes, responsesRes, linksRes] = await Promise.all([
+        fetch(`${API_URL}/api/satisfaction`),
+        fetch(`${API_URL}/api/admin/satisfaction`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/api/admin/satisfaction/links`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ])
+      if (statsRes.ok) {
+        const data = await statsRes.json()
+        setSatisfactionStats(data)
+      }
+      if (responsesRes.ok) setResponses(await responsesRes.json())
+      if (linksRes.ok) setLinks(await linksRes.json())
+    } catch (err) {
+      console.error('Error fetching satisfaction data:', err)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchStats()
+    if (activeTab === 'client_satisfaction') {
+      fetchSatisfactionData()
+    }
+  }, [activeTab, fetchStats, fetchSatisfactionData])
 
   const saveStats = useCallback(async (newCategories: StatCategory[]) => {
     const token = (await supabase.auth.getSession()).data.session?.access_token
@@ -148,8 +198,6 @@ export default function StatsScreen() {
       })
     }
   }, [])
-
-  useEffect(() => { fetchStats() }, [fetchStats])
 
   const currentCategory = categories.find(c => c.key === activeTab)
 
@@ -250,6 +298,51 @@ export default function StatsScreen() {
     ])
   }
 
+  const handleGenerateLink = async () => {
+    setGeneratingLink(true)
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token
+      const res = await fetch(`${API_URL}/api/admin/satisfaction/generate-link`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('Failed to generate link')
+      const data = await res.json()
+
+      Alert.alert('Link Generated', `Share this feedback link:\n\n${data.url}\n\nExpires: ${new Date(data.expires_at).toLocaleString()}`, [
+        { text: 'Copy Link', onPress: () => { Clipboard.setString(data.url); Alert.alert('Copied!', 'Link copied to clipboard') } },
+        { text: 'Share', onPress: async () => {
+          try { await Share.share({ message: `Share your experience with Fira Tech!\n\n${data.url}` }) }
+          catch (e) { console.error(e) }
+        }},
+        { text: 'OK' },
+      ])
+      fetchSatisfactionData()
+    } catch (err) {
+      Alert.alert('Error', 'Failed to generate link')
+      console.error(err)
+    } finally {
+      setGeneratingLink(false)
+    }
+  }
+
+  const handleDeleteResponse = (id: string) => {
+    Alert.alert('Delete Response', 'Are you sure?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        try {
+          const token = (await supabase.auth.getSession()).data.session?.access_token
+          const res = await fetch(`${API_URL}/api/admin/satisfaction`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ id }),
+          })
+          if (res.ok) fetchSatisfactionData()
+        } catch (err) { console.error(err) }
+      }},
+    ])
+  }
+
   if (loading) {
     return (
       <View style={styles.loading}>
@@ -259,6 +352,7 @@ export default function StatsScreen() {
   }
 
   const showImageUpload = activeTab === 'community_partners' || activeTab === 'projects_delivered'
+  const activeLinks = links.filter(l => new Date(l.expires_at) > new Date())
 
   return (
     <View style={styles.container}>
@@ -289,9 +383,96 @@ export default function StatsScreen() {
       <ScrollView
         contentContainerStyle={styles.list}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={fetchStats} tintColor={colors.gold} />
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={() => { if (activeTab === 'client_satisfaction') fetchSatisfactionData(); fetchStats() }}
+            tintColor={colors.gold}
+          />
         }
       >
+        {activeTab === 'client_satisfaction' && (
+          <>
+            {/* Satisfaction Summary */}
+            <View style={styles.satisfactionSummary}>
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryValue}>{satisfactionStats.percentage}%</Text>
+                <Text style={styles.summaryLabel}>Satisfaction</Text>
+              </View>
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryValue}>{satisfactionStats.average}</Text>
+                <Text style={styles.summaryLabel}>Avg Rating</Text>
+              </View>
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryValue}>{satisfactionStats.total}</Text>
+                <Text style={styles.summaryLabel}>Responses</Text>
+              </View>
+            </View>
+
+            {/* Generate Link */}
+            <TouchableOpacity
+              style={styles.generateBtn}
+              onPress={handleGenerateLink}
+              disabled={generatingLink}
+            >
+              <Text style={styles.generateBtnText}>
+                {generatingLink ? 'Generating...' : 'Generate Expiring Link'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Active Links */}
+            {activeLinks.length > 0 && (
+              <View style={styles.linksSection}>
+                <Text style={styles.sectionTitle}>Active Links ({activeLinks.length})</Text>
+                {activeLinks.map((link) => (
+                  <View key={link.token} style={styles.linkCard}>
+                    <Text style={styles.linkExpiry}>
+                      Expires: {new Date(link.expires_at).toLocaleString()}
+                    </Text>
+                    <Text style={styles.linkUrl} numberOfLines={1}>
+                      {API_URL}/feedback?token={link.token}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Responses */}
+            {responses.length > 0 && (
+              <View style={styles.responsesSection}>
+                <Text style={styles.sectionTitle}>Responses ({responses.length})</Text>
+                {responses.map((r) => (
+                  <View key={r.id} style={styles.responseCard}>
+                    <View style={styles.responseHeader}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.responseName}>{r.partner_name}</Text>
+                        <Text style={styles.responseRating}>
+                          {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
+                        </Text>
+                      </View>
+                      <TouchableOpacity onPress={() => handleDeleteResponse(r.id)}>
+                        <Text style={styles.deleteText}>Delete</Text>
+                      </TouchableOpacity>
+                    </View>
+                    {r.feedback ? (
+                      <Text style={styles.responseFeedback}>{r.feedback}</Text>
+                    ) : null}
+                    <Text style={styles.responseDate}>
+                      {new Date(r.created_at).toLocaleDateString()}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <View style={styles.separator} />
+          </>
+        )}
+
+        {/* Items Section Header */}
+        <Text style={styles.sectionTitle}>
+          {TABS.find(t => t.key === activeTab)?.label || 'Items'}
+        </Text>
+
         <TouchableOpacity style={styles.addBtn} onPress={openNewItemForm}>
           <Text style={styles.addBtnText}>+ Add {TABS.find(t => t.key === activeTab)?.label.slice(0, -1) || 'Item'}</Text>
         </TouchableOpacity>
@@ -507,6 +688,48 @@ const styles = StyleSheet.create({
   },
   tabCountText: { color: colors.textSecondary, fontSize: 10, fontWeight: '600' },
   list: { padding: spacing.lg },
+  sectionTitle: { fontSize: fonts.sizes.md, fontWeight: 'bold', color: colors.text, marginBottom: spacing.sm },
+  separator: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
+
+  // Satisfaction summary
+  satisfactionSummary: { flexDirection: 'row', gap: 12, marginBottom: spacing.md },
+  summaryCard: {
+    flex: 1, backgroundColor: colors.surface, borderRadius: 12, padding: spacing.md,
+    borderWidth: 1, borderColor: colors.border, alignItems: 'center',
+  },
+  summaryValue: { color: colors.gold, fontSize: fonts.sizes.xl, fontWeight: 'bold' },
+  summaryLabel: { color: colors.textMuted, fontSize: fonts.sizes.xs, marginTop: 4 },
+
+  // Generate link
+  generateBtn: {
+    backgroundColor: colors.forest, borderRadius: 10, padding: spacing.md,
+    alignItems: 'center', marginBottom: spacing.md,
+  },
+  generateBtnText: { color: '#fff', fontWeight: '600', fontSize: fonts.sizes.base },
+
+  // Links section
+  linksSection: { marginBottom: spacing.md },
+  linkCard: {
+    backgroundColor: colors.surface, borderRadius: 8, padding: spacing.sm,
+    marginBottom: 6, borderWidth: 1, borderColor: colors.border,
+  },
+  linkExpiry: { color: colors.textMuted, fontSize: fonts.sizes.xs, marginBottom: 4 },
+  linkUrl: { color: colors.text, fontSize: fonts.sizes.xs },
+
+  // Responses section
+  responsesSection: { marginBottom: spacing.md },
+  responseCard: {
+    backgroundColor: colors.surface, borderRadius: 10, padding: spacing.md,
+    marginBottom: 8, borderWidth: 1, borderColor: colors.border,
+  },
+  responseHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  responseName: { color: colors.gold, fontSize: fonts.sizes.base },
+  responseRating: { color: colors.textMuted, fontSize: fonts.sizes.sm, marginTop: 2 },
+  responseFeedback: { color: colors.text, fontSize: fonts.sizes.sm, marginTop: 6, lineHeight: 18 },
+  responseDate: { color: colors.textMuted, fontSize: fonts.sizes.xs, marginTop: 6 },
+  deleteText: { color: colors.error, fontSize: fonts.sizes.base },
+
+  // Items
   addBtn: {
     backgroundColor: colors.forest,
     paddingHorizontal: spacing.md,

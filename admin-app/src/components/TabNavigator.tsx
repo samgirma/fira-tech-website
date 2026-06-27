@@ -10,7 +10,6 @@ import JobsScreen from '../screens/JobsScreen'
 import SocialLinksScreen from '../screens/SocialLinksScreen'
 import StatsScreen from '../screens/StatsScreen'
 import MessagesScreen from '../screens/MessagesScreen'
-import SatisfactionScreen from '../screens/SatisfactionScreen'
 
 const Tab = createBottomTabNavigator()
 
@@ -22,7 +21,6 @@ const tabIcons: Record<string, string> = {
   Jobs: '💼',
   'Social Links': '🔗',
   Messages: '📨',
-  Satisfaction: '⭐',
 }
 
 function TabIcon({ routeName, color, size, badge }: { routeName: string; color: string; size: number; badge?: number }) {
@@ -115,7 +113,6 @@ export default function TabNavigator({ onLogout }: { onLogout: () => void }) {
         options={{ headerShown: false }}
       />
       <Tab.Screen name="Messages" component={MessagesScreen} options={{ headerShown: false }} />
-      <Tab.Screen name="Satisfaction" component={SatisfactionScreen} options={{ headerShown: false }} />
     </Tab.Navigator>
   )
 }
