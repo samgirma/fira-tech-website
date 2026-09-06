@@ -1,9 +1,28 @@
+# Dependencies
 node_modules/
+
+# Build outputs
 dist/
+build/
+
+# Environment files
 .env
 .env.local
+.env.*.local
+
+# Logs
 *.log
+npm-debug.log*
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # Expo
 .expo/
@@ -14,9 +33,11 @@ dist/
 *.mobileprovision
 *.orig.*
 
-# Vite
-fira-tech-website/dist/
+# TypeScript
+*.tsbuildinfo
 
-# Admin app
-admin-app/node_modules/
-admin-app/.expo/
+# Testing
+coverage/
+
+# Misc
+*.pem
