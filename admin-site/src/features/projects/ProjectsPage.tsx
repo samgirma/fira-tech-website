@@ -112,7 +112,7 @@ export default function ProjectsPage() {
         </div>
         <div className="flex items-center gap-3">
           <Link
-            to="/projects/github"
+            to="/github"
             className="btn-outline text-xs h-9 px-3"
           >
             <GitBranch size={15} className="mr-1.5" />

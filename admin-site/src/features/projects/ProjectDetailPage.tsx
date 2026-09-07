@@ -41,10 +41,14 @@ export default function ProjectDetailPage() {
 
   useEffect(() => {
     if (id) {
+      if (id === 'github') {
+        navigate('/github', { replace: true })
+        return
+      }
       loadProject(id)
       loadAvailableRepos()
     }
-  }, [id])
+  }, [id, navigate])
 
   const loadProject = async (projectId: string) => {
     try {

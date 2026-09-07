@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, MapPin, Clock, Briefcase, Wifi } from "lucide-react";
+import { ArrowRight, MapPin, Clock, Briefcase, Wifi, Upload, FileText, CheckCircle2, Trash2, AlertCircle, Loader2, Paperclip } from "lucide-react";
 import { site } from "@/lib/api";
 
 const fadeUp = {
@@ -18,9 +18,42 @@ export default function CareersPage() {
   const [applied, setApplied] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", coverLetter: "" });
 
+  // CV Upload state
+  const [cvUrl, setCvUrl] = useState<string>("");
+  const [cvName, setCvName] = useState<string>("");
+  const [cvSize, setCvSize] = useState<number>(0);
+  const [uploadingCv, setUploadingCv] = useState(false);
+  const [cvError, setCvError] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+
   useEffect(() => {
     site.getJobs().then(setJobs).catch(() => {});
   }, []);
+
+  const handleFileProcess = async (file: File) => {
+    setCvError(null);
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (!ext || !["pdf", "doc", "docx"].includes(ext)) {
+      setCvError("Unsupported format. Please upload a genuine PDF, DOC, or DOCX document.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setCvError("File exceeds 10MB limit. Please upload a smaller file.");
+      return;
+    }
+
+    setUploadingCv(true);
+    try {
+      const result = await site.uploadCv(file);
+      setCvUrl(result.url);
+      setCvName(result.filename);
+      setCvSize(result.size);
+    } catch (err: any) {
+      setCvError(err.message || "Failed to upload and sanitize CV.");
+    } finally {
+      setUploadingCv(false);
+    }
+  };
 
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +65,7 @@ export default function CareersPage() {
         name: form.name,
         email: form.email,
         phone: form.phone,
+        cvUrl: cvUrl || undefined,
         coverLetter: form.coverLetter,
       });
       setApplied(true);
@@ -148,6 +182,97 @@ export default function CareersPage() {
                           onChange={(e) => setForm({ ...form, phone: e.target.value })}
                           className="w-full px-4 py-3 rounded-xl bg-muted/30 border border-border/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
                         />
+
+                        {/* CV / Resume Upload Component */}
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-semibold text-foreground">
+                            Resume / CV (PDF, DOC, DOCX up to 10MB)
+                          </label>
+
+                          {cvUrl ? (
+                            <div className="flex items-center justify-between p-3 rounded-xl bg-forest/10 border border-forest/30">
+                              <div className="flex items-center gap-2.5 overflow-hidden">
+                                <div className="w-8 h-8 rounded-lg bg-forest/20 text-forest-light flex items-center justify-center shrink-0">
+                                  <FileText className="w-4 h-4" />
+                                </div>
+                                <div className="truncate">
+                                  <p className="text-xs font-medium text-foreground truncate">{cvName}</p>
+                                  <p className="text-3xs text-muted-foreground">
+                                    {(cvSize / 1024).toFixed(0)} KB &bull; <span className="text-forest-light font-semibold">Sanitized &amp; Attached</span>
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCvUrl("");
+                                  setCvName("");
+                                  setCvSize(0);
+                                }}
+                                className="p-1.5 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-muted/40 transition-colors"
+                                title="Remove resume"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div
+                              onDragOver={(e) => {
+                                e.preventDefault();
+                                setIsDragOver(true);
+                              }}
+                              onDragLeave={() => setIsDragOver(false)}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                setIsDragOver(false);
+                                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                                  handleFileProcess(e.dataTransfer.files[0]);
+                                }
+                              }}
+                              className={`relative border-2 border-dashed rounded-xl p-4 text-center transition-all cursor-pointer ${
+                                isDragOver
+                                  ? "border-accent bg-accent/5"
+                                  : "border-border/60 hover:border-accent/40 bg-muted/20"
+                              }`}
+                            >
+                              <input
+                                type="file"
+                                accept=".pdf,.doc,.docx"
+                                disabled={uploadingCv}
+                                onChange={(e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    handleFileProcess(e.target.files[0]);
+                                  }
+                                }}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                              />
+
+                              {uploadingCv ? (
+                                <div className="flex items-center justify-center gap-2 py-2 text-xs text-accent">
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  <span>Inspecting &amp; sanitizing document...</span>
+                                </div>
+                              ) : (
+                                <div className="flex flex-col items-center justify-center gap-1.5 py-1">
+                                  <Upload className="w-5 h-5 text-muted-foreground" />
+                                  <p className="text-xs font-medium text-foreground">
+                                    Click or drag resume here to upload
+                                  </p>
+                                  <p className="text-3xs text-muted-foreground">
+                                    PDF, DOC, or DOCX (Max 10MB) &bull; Verified binary check
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {cvError && (
+                            <div className="flex items-center gap-1.5 text-xs text-red-400 mt-1">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                              <span>{cvError}</span>
+                            </div>
+                          )}
+                        </div>
                         <textarea
                           placeholder="Cover Letter"
                           rows={4}

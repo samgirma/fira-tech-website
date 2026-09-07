@@ -329,6 +329,24 @@ class ApiClient {
     return this.request<any[]>(`/api/jobs/admin/applications${qs}`)
   }
 
+  async sendApplicantEmail(applicationId: string, data: { subject: string; body: string; template?: string; newStatus?: string }) {
+    return this.request<any>(`/api/jobs/admin/applications/${applicationId}/email`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateApplicationStatus(applicationId: string, status: string, notes?: string) {
+    return this.request<any>(`/api/jobs/admin/applications/${applicationId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, notes }),
+    })
+  }
+
+  async getApplicationEmails(applicationId: string) {
+    return this.request<any[]>(`/api/jobs/admin/applications/${applicationId}/emails`)
+  }
+
   // --- Website: Settings & Social Links ---
   async getSettings() {
     return this.request<Record<string, string>>('/api/settings')

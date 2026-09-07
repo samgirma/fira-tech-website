@@ -6,10 +6,31 @@ import rateLimit from 'express-rate-limit'
 import { pinoHttp } from 'pino-http'
 import { config } from './config/index.js'
 import routes from './routes/index.js'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import { errorHandler, notFound } from './middleware/error.js'
 import { logger } from './utils/logger.js'
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
+
+// Serve uploaded files (e.g. candidate resumes) with strict security headers
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
+  setHeaders: (res, filePath) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff')
+    res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'")
+    if (filePath.endsWith('.pdf')) {
+      res.setHeader('Content-Type', 'application/pdf')
+      res.setHeader('Content-Disposition', 'inline')
+    } else if (filePath.endsWith('.docx')) {
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+      res.setHeader('Content-Disposition', 'attachment')
+    } else if (filePath.endsWith('.doc')) {
+      res.setHeader('Content-Type', 'application/msword')
+      res.setHeader('Content-Disposition', 'attachment')
+    }
+  },
+}))
 
 // Security headers with Helmet
 app.use(helmet({

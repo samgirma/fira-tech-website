@@ -1,7 +1,18 @@
 import { Router } from 'express'
+import multer from 'multer'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import { db } from '../config/database.js'
+import { validateAndSanitizeResume } from '../utils/file_sanitizer.js'
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const router = Router()
+
+const resumeUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 12 * 1024 * 1024 },
+})
 
 // GET /api/v1/public/company - Company profile and settings
 router.get('/company', async (req, res, next) => {
@@ -263,6 +274,37 @@ router.post('/project-requests', async (req, res, next) => {
     res.status(201).json({
       message: 'Your project request has been received. We will review the details and get back to you.',
       client: clientResult.rows[0],
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+// POST /api/v1/public/upload-cv - Upload and sanitize candidate resume
+router.post('/upload-cv', resumeUpload.single('file'), async (req, res, next) => {
+  try {
+    const file = req.file
+    if (!file) {
+      return res.status(400).json({ error: 'No resume file received. Please attach a PDF or Word document.' })
+    }
+
+    const validation = validateAndSanitizeResume(file.buffer, file.originalname, file.mimetype)
+    if (!validation.isValid) {
+      return res.status(400).json({ error: validation.error })
+    }
+
+    const uploadDir = path.join(__dirname, '../../uploads/resumes')
+    await fs.promises.mkdir(uploadDir, { recursive: true })
+    const targetPath = path.join(uploadDir, validation.storageFilename)
+    await fs.promises.writeFile(targetPath, file.buffer)
+
+    return res.status(201).json({
+      success: true,
+      url: `/uploads/resumes/${validation.storageFilename}`,
+      filename: validation.originalName,
+      storageFilename: validation.storageFilename,
+      size: validation.size,
+      extension: validation.extension,
     })
   } catch (error) {
     next(error)

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Github, Linkedin, MessageCircle, Globe, Twitter, Youtube, Facebook, Instagram, Heart } from "lucide-react";
+import { Github, Linkedin, MessageCircle, Globe, Twitter, Youtube, Facebook, Instagram } from "lucide-react";
 import { site } from "@/lib/api";
 
 const iconMap: Record<string, any> = {
@@ -100,9 +100,6 @@ export function Footer() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">
             © {currentYear} {company?.name || "Fira Tech Solutions"}. All rights reserved.
-          </p>
-          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-            Built with <Heart className="w-3 h-3 text-accent fill-accent" /> in Ethiopia
           </p>
         </div>
       </div>

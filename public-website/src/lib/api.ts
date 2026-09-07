@@ -125,6 +125,30 @@ class PublicApiClient {
   async submitComment(data: { blogId: string; author: string; email?: string; content: string }) {
     return this.post<any>('/api/comments', data)
   }
+
+  async uploadCv(file: File) {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const res = await fetch(`${this.baseUrl}/api/v1/public/upload-cv`, {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}))
+      throw new Error(errData.error || 'Failed to upload CV. Please ensure it is a genuine PDF or Word document under 10MB.')
+    }
+
+    return res.json() as Promise<{
+      success: boolean
+      url: string
+      filename: string
+      storageFilename: string
+      size: number
+      extension: string
+    }>
+  }
 }
 
 export const site = new PublicApiClient(API_BASE)

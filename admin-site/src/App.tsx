@@ -123,8 +123,12 @@ function AppRoutes() {
 
         {/* 4. Projects */}
         <Route path="/projects" element={<ProjectsPage />} />
+        <Route path="/projects/github" element={<Navigate to="/github" replace />} />
         <Route path="/projects/:id" element={<ProjectDetailPage />} />
-        <Route path="/projects/github" element={<GitHubProjectsPage />} />
+
+        {/* GitHub Organization */}
+        <Route path="/github" element={<GitHubProjectsPage />} />
+        <Route path="/gihub" element={<Navigate to="/github" replace />} />
 
         {/* 5. Finance */}
         <Route path="/finance" element={<Navigate to="/finance/invoices" replace />} />
@@ -141,8 +145,7 @@ function AppRoutes() {
         <Route path="/business/customers" element={<Navigate to="/clients/directory" replace />} />
         <Route path="/business/requests" element={<Navigate to="/website/settings" replace />} />
         <Route path="/tasks" element={<Navigate to="/projects" replace />} />
-        <Route path="/github/*" element={<Navigate to="/projects/github" replace />} />
-        <Route path="/github" element={<Navigate to="/projects/github" replace />} />
+        <Route path="/github/*" element={<Navigate to="/github" replace />} />
         <Route path="/careers/*" element={<Navigate to="/website/careers" replace />} />
         <Route path="/careers" element={<Navigate to="/website/careers" replace />} />
         <Route path="/finance/revenue" element={<Navigate to="/finance/ledger" replace />} />

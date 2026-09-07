@@ -65,7 +65,7 @@ const navigation: NavGroup[] = [
     label: 'PROJECTS',
     items: [
       { label: 'All Projects', href: '/projects', icon: FolderKanban },
-      { label: 'GitHub Organization', href: '/projects/github', icon: GitBranch },
+      { label: 'GitHub Organization', href: '/github', icon: GitBranch },
     ],
   },
   {
