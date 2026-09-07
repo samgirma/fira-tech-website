@@ -29,12 +29,14 @@ export default function MediaPage() {
 
   const loadMedia = async () => {
     try {
-      const stats = await api.getSiteStats()
-      const mediaStats = stats.find((s: any) => s.key === 'media')
-      if (mediaStats?.value) {
-        const parsed = typeof mediaStats.value === 'string' ? JSON.parse(mediaStats.value) : mediaStats.value
-        if (Array.isArray(parsed)) {
-          setImages(parsed)
+      if (typeof api.getSiteStats === 'function') {
+        const stats = await api.getSiteStats()
+        const mediaStats = stats.find((s: any) => s.key === 'media')
+        if (mediaStats?.value) {
+          const parsed = typeof mediaStats.value === 'string' ? JSON.parse(mediaStats.value) : mediaStats.value
+          if (Array.isArray(parsed)) {
+            setImages(parsed)
+          }
         }
       }
     } catch (error) {
@@ -59,10 +61,15 @@ export default function MediaPage() {
     try {
       const reader = new FileReader()
       reader.onload = async () => {
-        const base64 = reader.result as string
-        const result = await api.uploadImage(base64)
-        setImages((prev) => [{ url: result.url, public_id: result.public_id }, ...prev])
-        setIsUploading(false)
+        try {
+          const base64 = reader.result as string
+          const result = await api.uploadImage(base64)
+          setImages((prev) => [{ url: result.url, public_id: result.public_id }, ...prev])
+        } catch (uploadErr: any) {
+          setError(uploadErr?.message || 'Upload failed. Cloudinary may not be configured.')
+        } finally {
+          setIsUploading(false)
+        }
       }
       reader.onerror = () => {
         setError('Failed to read file')

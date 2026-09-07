@@ -528,16 +528,16 @@ class ApiClient {
   }
 
   // --- Image Upload ---
-  async uploadImage(file: File): Promise<{ url: string }> {
-    const formData = new FormData()
-    formData.append('file', file)
+  async uploadImage(base64: string): Promise<{ url: string; public_id: string }> {
     const res = await fetch(`${this.baseUrl}/api/upload`, {
       method: 'POST',
       credentials: 'include',
-      body: formData,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: base64 }),
     })
     if (!res.ok) {
-      throw new Error('Image upload failed')
+      const err = await res.json().catch(() => ({ error: 'Upload failed' }))
+      throw new Error(err.error || 'Image upload failed')
     }
     return res.json()
   }
