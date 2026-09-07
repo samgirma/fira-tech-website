@@ -50,7 +50,7 @@ app.use(pinoHttp({
     return 'info'
   },
   customSuccessMessage: (req, res) => `${req.method} ${req.url} → ${res.statusCode}`,
-  customErrorMessage: (req, res, err) => `${req.method} ${req.url} → ${res.statusCode} ${err.message || 'error'}`,
+  customErrorMessage: () => '',
   serializers: {
     err: () => undefined,
     req: (req) => ({ method: req.method, url: req.url }),
