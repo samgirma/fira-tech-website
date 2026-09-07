@@ -16,15 +16,14 @@ import {
 
 export interface Testimonial {
   id: string
-  client_name: string
-  client_title?: string
-  client_company?: string
+  customer_name: string
+  position?: string
+  company?: string
   content: string
   rating: number
-  avatar_url?: string
-  is_featured: boolean
-  is_published: boolean
-  order_index: number
+  photo_url?: string
+  featured: boolean
+  published: boolean
   created_at?: string
 }
 
@@ -84,9 +83,9 @@ export default function TestimonialsPage() {
 
   const handleTogglePublish = async (item: Testimonial) => {
     try {
-      await api.updateTestimonial(item.id, { is_published: !item.is_published })
+      await api.updateTestimonial(item.id, { published: !item.published })
       setTestimonials((prev) =>
-        prev.map((t) => (t.id === item.id ? { ...t, is_published: !item.is_published } : t))
+        prev.map((t) => (t.id === item.id ? { ...t, published: !item.published } : t))
       )
     } catch (err) {
       console.error('Failed to toggle publish:', err)
@@ -95,9 +94,9 @@ export default function TestimonialsPage() {
 
   const filtered = testimonials.filter(
     (t) =>
-      t.client_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (t.client_company && t.client_company.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      t.content.toLowerCase().includes(searchQuery.toLowerCase())
+      t.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (t.company && t.company.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      t.content?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   return (
@@ -153,15 +152,15 @@ export default function TestimonialsPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-full bg-brand-100 dark:bg-brand-900/60 text-brand-700 dark:text-brand-300 font-bold flex items-center justify-center text-xs">
-                      {item.client_name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+                      {item.customer_name?.split(' ').map((n) => n[0]).join('').slice(0, 2)}
                     </div>
                     <div>
                       <h4 className="font-bold text-xs text-surface-900 dark:text-surface-100">
-                        {item.client_name}
+                        {item.customer_name}
                       </h4>
                       <div className="text-3xs text-surface-500 dark:text-surface-400">
-                        {item.client_title && <span>{item.client_title}</span>}
-                        {item.client_company && <span> • {item.client_company}</span>}
+                        {item.position && <span>{item.position}</span>}
+                        {item.company && <span> • {item.company}</span>}
                       </div>
                     </div>
                   </div>
@@ -209,7 +208,7 @@ export default function TestimonialsPage() {
                   onClick={() => handleTogglePublish(item)}
                   className="font-semibold hover:opacity-80 transition-opacity"
                 >
-                  {item.is_published ? (
+                  {item.published ? (
                     <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                       <CheckCircle2 size={12} /> Published
                     </span>
@@ -220,7 +219,7 @@ export default function TestimonialsPage() {
                   )}
                 </button>
 
-                {item.is_featured && (
+                {item.featured && (
                   <span className="flex items-center gap-0.5 text-gold-500 font-semibold">
                     <Star size={11} fill="currentColor" /> Homepage Featured
                   </span>
@@ -277,14 +276,13 @@ function TestimonialModal({
   onSave: (data: any) => Promise<void>
   onClose: () => void
 }) {
-  const [clientName, setClientName] = useState(item?.client_name || '')
-  const [clientTitle, setClientTitle] = useState(item?.client_title || '')
-  const [clientCompany, setClientCompany] = useState(item?.client_company || '')
+  const [clientName, setClientName] = useState(item?.customer_name || '')
+  const [clientTitle, setClientTitle] = useState(item?.position || '')
+  const [clientCompany, setClientCompany] = useState(item?.company || '')
   const [content, setContent] = useState(item?.content || '')
   const [rating, setRating] = useState(item?.rating || 5)
-  const [isFeatured, setIsFeatured] = useState(item?.is_featured || false)
-  const [isPublished, setIsPublished] = useState(item?.is_published ?? true)
-  const [orderIndex, setOrderIndex] = useState(item?.order_index || 0)
+  const [isFeatured, setIsFeatured] = useState(item?.featured || false)
+  const [isPublished, setIsPublished] = useState(item?.published ?? true)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -294,14 +292,13 @@ function TestimonialModal({
     try {
       setIsSubmitting(true)
       await onSave({
-        client_name: clientName,
-        client_title: clientTitle || undefined,
-        client_company: clientCompany || undefined,
+        customer_name: clientName,
+        position: clientTitle || undefined,
+        company: clientCompany || undefined,
         content,
         rating: Number(rating),
-        is_featured: isFeatured,
-        is_published: isPublished,
-        order_index: Number(orderIndex) || 0,
+        featured: isFeatured,
+        published: isPublished,
       })
     } finally {
       setIsSubmitting(false)
