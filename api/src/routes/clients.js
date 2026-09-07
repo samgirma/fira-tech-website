@@ -216,6 +216,10 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
 // DELETE /api/clients/:id - Delete client
 router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
   try {
+    // Unlink referencing records before deleting
+    await db.query('UPDATE projects SET customer_id = NULL WHERE customer_id = $1', [req.params.id])
+    await db.query('UPDATE revenue SET client_id = NULL WHERE client_id = $1', [req.params.id])
+    await db.query('UPDATE invoices SET customer_id = NULL WHERE customer_id = $1', [req.params.id])
     const result = await db.query('DELETE FROM clients WHERE id = $1 RETURNING id', [req.params.id])
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Client not found' })
