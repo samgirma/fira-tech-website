@@ -37,7 +37,7 @@ router.get('/', authenticate, requireAdmin, async (req, res) => {
     const result = await db.query(query, params)
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching leads:', error)
+    console.error('fetching leads:', error.message)
     return res.status(500).json({ error: 'Failed to fetch leads' })
   }
 })
@@ -55,7 +55,7 @@ router.get('/stats', authenticate, requireAdmin, async (req, res) => {
     )
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching lead stats:', error)
+    console.error('fetching lead stats:', error.message)
     return res.status(500).json({ error: 'Failed to fetch lead stats' })
   }
 })
@@ -77,7 +77,7 @@ router.get('/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error fetching lead:', error)
+    console.error('fetching lead:', error.message)
     return res.status(500).json({ error: 'Failed to fetch lead' })
   }
 })
@@ -95,7 +95,7 @@ router.post('/', authenticate, requireAdmin, validate(leadSchema), async (req, r
 
     return res.status(201).json(result.rows[0])
   } catch (error) {
-    console.error('Error creating lead:', error)
+    console.error('creating lead:', error.message)
     return res.status(500).json({ error: 'Failed to create lead' })
   }
 })
@@ -129,7 +129,7 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error updating lead:', error)
+    console.error('updating lead:', error.message)
     return res.status(500).json({ error: 'Failed to update lead' })
   }
 })
@@ -145,7 +145,7 @@ router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json({ message: 'Lead deleted successfully' })
   } catch (error) {
-    console.error('Error deleting lead:', error)
+    console.error('deleting lead:', error.message)
     return res.status(500).json({ error: 'Failed to delete lead' })
   }
 })

@@ -20,7 +20,7 @@ router.post('/', async (req, res) => {
 
     return res.status(201).json({ success: true, id: result.rows[0].id })
   } catch (error) {
-    console.error('Error submitting satisfaction:', error)
+    console.error('submitting satisfaction:', error.message)
     return res.status(500).json({ error: 'Failed to submit response' })
   }
 })
@@ -42,7 +42,7 @@ router.get('/', async (req, res) => {
       percentage: parseInt(result.rows[0].percentage),
     })
   } catch (error) {
-    console.error('Error fetching satisfaction stats:', error)
+    console.error('fetching satisfaction stats:', error.message)
     return res.status(500).json({ error: 'Failed to fetch stats' })
   }
 })
@@ -55,7 +55,7 @@ router.get('/admin', authenticate, requireAdmin, async (req, res) => {
     )
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching satisfaction responses:', error)
+    console.error('fetching satisfaction responses:', error.message)
     return res.status(500).json({ error: 'Failed to fetch responses' })
   }
 })
@@ -71,7 +71,7 @@ router.delete('/admin/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json({ message: 'Response deleted successfully' })
   } catch (error) {
-    console.error('Error deleting satisfaction response:', error)
+    console.error('deleting satisfaction response:', error.message)
     return res.status(500).json({ error: 'Failed to delete response' })
   }
 })

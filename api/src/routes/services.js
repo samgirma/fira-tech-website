@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
     const result = await db.query(query)
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching services:', error)
+    console.error('fetching services:', error.message)
     return res.status(500).json({ error: 'Failed to fetch services' })
   }
 })
@@ -86,7 +86,7 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(201).json(result.rows[0])
   } catch (error) {
-    console.error('Error creating service:', error)
+    console.error('creating service:', error.message)
     return res.status(500).json({ error: 'Failed to create service' })
   }
 })
@@ -147,7 +147,7 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error updating service:', error)
+    console.error('updating service:', error.message)
     return res.status(500).json({ error: 'Failed to update service' })
   }
 })

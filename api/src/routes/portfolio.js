@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
     const result = await db.query(query, params)
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching portfolio:', error)
+    console.error('fetching portfolio:', error.message)
     return res.status(500).json({ error: 'Failed to fetch portfolio projects' })
   }
 })
@@ -109,7 +109,7 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(201).json(result.rows[0])
   } catch (error) {
-    console.error('Error creating portfolio project:', error)
+    console.error('creating portfolio project:', error.message)
     return res.status(500).json({ error: 'Failed to create portfolio project' })
   }
 })
@@ -185,7 +185,7 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error updating portfolio project:', error)
+    console.error('updating portfolio project:', error.message)
     return res.status(500).json({ error: 'Failed to update portfolio project' })
   }
 })

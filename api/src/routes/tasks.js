@@ -37,7 +37,7 @@ router.get('/', authenticate, requireAdmin, async (req, res) => {
     const result = await db.query(query, params)
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching tasks:', error)
+    console.error('fetching tasks:', error.message)
     return res.status(500).json({ error: 'Failed to fetch tasks' })
   }
 })
@@ -62,7 +62,7 @@ router.get('/today', authenticate, requireAdmin, async (req, res) => {
     )
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching today tasks:', error)
+    console.error('fetching today tasks:', error.message)
     return res.status(500).json({ error: 'Failed to fetch tasks' })
   }
 })
@@ -84,7 +84,7 @@ router.get('/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error fetching task:', error)
+    console.error('fetching task:', error.message)
     return res.status(500).json({ error: 'Failed to fetch task' })
   }
 })
@@ -102,7 +102,7 @@ router.post('/', authenticate, requireAdmin, validate(taskSchema), async (req, r
 
     return res.status(201).json(result.rows[0])
   } catch (error) {
-    console.error('Error creating task:', error)
+    console.error('creating task:', error.message)
     return res.status(500).json({ error: 'Failed to create task' })
   }
 })
@@ -133,7 +133,7 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error updating task:', error)
+    console.error('updating task:', error.message)
     return res.status(500).json({ error: 'Failed to update task' })
   }
 })
@@ -154,7 +154,7 @@ router.patch('/:id/status', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error updating task status:', error)
+    console.error('updating task status:', error.message)
     return res.status(500).json({ error: 'Failed to update task status' })
   }
 })
@@ -170,7 +170,7 @@ router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json({ message: 'Task deleted successfully' })
   } catch (error) {
-    console.error('Error deleting task:', error)
+    console.error('deleting task:', error.message)
     return res.status(500).json({ error: 'Failed to delete task' })
   }
 })

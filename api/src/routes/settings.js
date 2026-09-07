@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
     }
     return res.status(200).json(settings)
   } catch (error) {
-    console.error('Error fetching settings:', error)
+    console.error('fetching settings:', error.message)
     return res.status(500).json({ error: 'Failed to fetch settings' })
   }
 })
@@ -30,7 +30,7 @@ router.get('/:key', async (req, res) => {
 
     return res.status(200).json({ key: req.params.key, value: result.rows[0].value })
   } catch (error) {
-    console.error('Error fetching setting:', error)
+    console.error('fetching setting:', error.message)
     return res.status(500).json({ error: 'Failed to fetch setting' })
   }
 })
@@ -54,7 +54,7 @@ router.put('/admin', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error updating setting:', error)
+    console.error('updating setting:', error.message)
     return res.status(500).json({ error: 'Failed to update setting' })
   }
 })
@@ -70,7 +70,7 @@ router.delete('/admin/:key', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json({ message: 'Setting deleted successfully' })
   } catch (error) {
-    console.error('Error deleting setting:', error)
+    console.error('deleting setting:', error.message)
     return res.status(500).json({ error: 'Failed to delete setting' })
   }
 })

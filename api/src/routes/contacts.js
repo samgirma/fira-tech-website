@@ -17,7 +17,7 @@ router.post('/', validate(contactSchema), async (req, res) => {
 
     return res.status(201).json({ success: true, id: result.rows[0].id })
   } catch (error) {
-    console.error('Error submitting contact:', error)
+    console.error('submitting contact:', error.message)
     return res.status(500).json({ error: 'Failed to submit message' })
   }
 })
@@ -30,7 +30,7 @@ router.get('/admin', authenticate, requireAdmin, async (req, res) => {
     )
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching contacts:', error)
+    console.error('fetching contacts:', error.message)
     return res.status(500).json({ error: 'Failed to fetch contacts' })
   }
 })
@@ -51,7 +51,7 @@ router.put('/admin/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error updating contact:', error)
+    console.error('updating contact:', error.message)
     return res.status(500).json({ error: 'Failed to update message' })
   }
 })
@@ -67,7 +67,7 @@ router.delete('/admin/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json({ message: 'Message deleted successfully' })
   } catch (error) {
-    console.error('Error deleting contact:', error)
+    console.error('deleting contact:', error.message)
     return res.status(500).json({ error: 'Failed to delete message' })
   }
 })

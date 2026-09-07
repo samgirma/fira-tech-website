@@ -42,7 +42,7 @@ router.get('/pipeline', authenticate, requireAdmin, async (req, res) => {
       totalCount: clientsResult.rows.length,
     })
   } catch (error) {
-    console.error('Error fetching pipeline:', error)
+    console.error('fetching pipeline:', error.message)
     return res.status(500).json({ error: 'Failed to fetch pipeline' })
   }
 })
@@ -77,7 +77,7 @@ router.get('/', authenticate, requireAdmin, async (req, res) => {
     const result = await db.query(query, params)
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching clients:', error)
+    console.error('fetching clients:', error.message)
     return res.status(500).json({ error: 'Failed to fetch clients' })
   }
 })
@@ -104,7 +104,7 @@ router.get('/:id', authenticate, requireAdmin, async (req, res) => {
       invoices: invoicesResult.rows,
     })
   } catch (error) {
-    console.error('Error fetching client detail:', error)
+    console.error('fetching client detail:', error.message)
     return res.status(500).json({ error: 'Failed to fetch client' })
   }
 })
@@ -151,7 +151,7 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(201).json(result.rows[0])
   } catch (error) {
-    console.error('Error creating client:', error)
+    console.error('creating client:', error.message)
     return res.status(500).json({ error: 'Failed to create client' })
   }
 })
@@ -208,7 +208,7 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error updating client:', error)
+    console.error('updating client:', error.message)
     return res.status(500).json({ error: 'Failed to update client' })
   }
 })
@@ -226,7 +226,7 @@ router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
     }
     return res.status(200).json({ message: 'Client deleted successfully' })
   } catch (error) {
-    console.error('Error deleting client:', error)
+    console.error('deleting client:', error.message)
     return res.status(500).json({ error: 'Failed to delete client' })
   }
 })

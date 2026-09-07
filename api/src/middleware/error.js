@@ -1,6 +1,5 @@
 export function errorHandler(err, req, res, next) {
-  console.error('Error:', err.message)
-  console.error(err.stack)
+  console.error(`[${req.method}] ${req.path} → ${err.message}`)
 
   if (err.type === 'entity.parse.failed') {
     return res.status(400).json({ error: 'Invalid JSON' })

@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
     )
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching blogs:', error)
+    console.error('fetching blogs:', error.message)
     return res.status(500).json({ error: 'Failed to fetch blogs' })
   }
 })
@@ -48,7 +48,7 @@ router.get('/:slug', async (req, res) => {
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error fetching blog:', error)
+    console.error('fetching blog:', error.message)
     return res.status(500).json({ error: 'Failed to fetch blog' })
   }
 })
@@ -68,7 +68,7 @@ router.post('/', authenticate, requireAdmin, validate(blogSchema), async (req, r
 
     return res.status(201).json(result.rows[0])
   } catch (error) {
-    console.error('Error creating blog:', error)
+    console.error('creating blog:', error.message)
     return res.status(500).json({ error: 'Failed to create blog' })
   }
 })
@@ -101,7 +101,7 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error updating blog:', error)
+    console.error('updating blog:', error.message)
     return res.status(500).json({ error: 'Failed to update blog' })
   }
 })
@@ -117,7 +117,7 @@ router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json({ message: 'Blog deleted successfully' })
   } catch (error) {
-    console.error('Error deleting blog:', error)
+    console.error('deleting blog:', error.message)
     return res.status(500).json({ error: 'Failed to delete blog' })
   }
 })

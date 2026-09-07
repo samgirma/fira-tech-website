@@ -49,6 +49,13 @@ app.use(pinoHttp({
     if (res.statusCode >= 400) return 'warn'
     return 'info'
   },
+  customSuccessMessage: (req, res) => {
+    if (res.statusCode >= 400) return `${req.method} ${req.url} → ${res.statusCode}`
+    return `${req.method} ${req.url} → ${res.statusCode}`
+  },
+  customErrorMessage: (req, res, err) => {
+    return `${req.method} ${req.url} → ${res.statusCode} ${err.message}`
+  },
 }))
 
 // CORS configuration

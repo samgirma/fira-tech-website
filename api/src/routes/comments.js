@@ -21,7 +21,7 @@ router.post('/', async (req, res) => {
 
     return res.status(201).json(result.rows[0])
   } catch (error) {
-    console.error('Error creating comment:', error)
+    console.error('creating comment:', error.message)
     return res.status(500).json({ error: 'Failed to create comment' })
   }
 })
@@ -37,7 +37,7 @@ router.get('/:blogId', async (req, res) => {
     )
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching comments:', error)
+    console.error('fetching comments:', error.message)
     return res.status(500).json({ error: 'Failed to fetch comments' })
   }
 })
@@ -62,7 +62,7 @@ router.get('/admin/all', authenticate, requireAdmin, async (req, res) => {
     const result = await db.query(query)
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching comments:', error)
+    console.error('fetching comments:', error.message)
     return res.status(500).json({ error: 'Failed to fetch comments' })
   }
 })
@@ -83,7 +83,7 @@ router.put('/admin/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error updating comment:', error)
+    console.error('updating comment:', error.message)
     return res.status(500).json({ error: 'Failed to update comment' })
   }
 })
@@ -99,7 +99,7 @@ router.delete('/admin/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json({ message: 'Comment deleted successfully' })
   } catch (error) {
-    console.error('Error deleting comment:', error)
+    console.error('deleting comment:', error.message)
     return res.status(500).json({ error: 'Failed to delete comment' })
   }
 })

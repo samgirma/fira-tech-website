@@ -37,7 +37,7 @@ router.get('/overview', authenticate, requireAdmin, async (req, res) => {
       overdue: parseFloat(overdue.rows[0].total),
     })
   } catch (error) {
-    console.error('Error fetching finance overview:', error)
+    console.error('fetching finance overview:', error.message)
     return res.status(500).json({ error: 'Failed to fetch overview' })
   }
 })
@@ -119,7 +119,7 @@ router.get('/reports', authenticate, requireAdmin, async (req, res) => {
       revenueCategories: revenueCategories.rows.map(r => ({ category: r.category, total: parseFloat(r.total) })),
     })
   } catch (error) {
-    console.error('Error fetching finance reports:', error)
+    console.error('fetching finance reports:', error.message)
     return res.status(500).json({ error: 'Failed to fetch financial reports' })
   }
 })
@@ -138,7 +138,7 @@ router.get('/revenue', authenticate, requireAdmin, async (req, res) => {
     )
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching revenue:', error)
+    console.error('fetching revenue:', error.message)
     return res.status(500).json({ error: 'Failed to fetch revenue' })
   }
 })
@@ -160,7 +160,7 @@ router.post('/revenue', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(201).json(result.rows[0])
   } catch (error) {
-    console.error('Error creating revenue:', error)
+    console.error('creating revenue:', error.message)
     return res.status(500).json({ error: 'Failed to create revenue entry' })
   }
 })
@@ -187,7 +187,7 @@ router.get('/expenses', authenticate, requireAdmin, async (req, res) => {
     )
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching expenses:', error)
+    console.error('fetching expenses:', error.message)
     return res.status(500).json({ error: 'Failed to fetch expenses' })
   }
 })
@@ -209,7 +209,7 @@ router.post('/expenses', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(201).json(result.rows[0])
   } catch (error) {
-    console.error('Error creating expense:', error)
+    console.error('creating expense:', error.message)
     return res.status(500).json({ error: 'Failed to create expense' })
   }
 })
@@ -240,7 +240,7 @@ router.get('/invoices', authenticate, requireAdmin, async (req, res) => {
     )
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching invoices:', error)
+    console.error('fetching invoices:', error.message)
     return res.status(500).json({ error: 'Failed to fetch invoices' })
   }
 })
@@ -266,7 +266,7 @@ router.post('/invoices', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(201).json(result.rows[0])
   } catch (error) {
-    console.error('Error creating invoice:', error)
+    console.error('creating invoice:', error.message)
     return res.status(500).json({ error: 'Failed to create invoice' })
   }
 })
@@ -311,7 +311,7 @@ router.put('/invoices/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error updating invoice:', error)
+    console.error('updating invoice:', error.message)
     return res.status(500).json({ error: 'Failed to update invoice' })
   }
 })

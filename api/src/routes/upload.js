@@ -33,7 +33,7 @@ router.post('/', authenticate, async (req, res) => {
       height: result.height,
     })
   } catch (error) {
-    console.error('Upload error:', error)
+    console.error('Upload failed:', error.message)
     return res.status(500).json({ error: error.message || 'Upload failed' })
   }
 })
@@ -47,7 +47,7 @@ router.delete('/:publicId', authenticate, async (req, res) => {
 
     return res.status(200).json({ message: 'Image deleted successfully' })
   } catch (error) {
-    console.error('Delete error:', error)
+    console.error('Delete failed:', error.message)
     return res.status(500).json({ error: 'Failed to delete image' })
   }
 })

@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
     )
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching jobs:', error)
+    console.error('fetching jobs:', error.message)
     return res.status(500).json({ error: 'Failed to fetch jobs' })
   }
 })
@@ -30,7 +30,7 @@ router.get('/:id', async (req, res) => {
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error fetching job:', error)
+    console.error('fetching job:', error.message)
     return res.status(500).json({ error: 'Failed to fetch job' })
   }
 })
@@ -43,7 +43,7 @@ router.get('/admin/all', authenticate, requireAdmin, async (req, res) => {
     )
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching jobs:', error)
+    console.error('fetching jobs:', error.message)
     return res.status(500).json({ error: 'Failed to fetch jobs' })
   }
 })
@@ -61,7 +61,7 @@ router.post('/admin', authenticate, requireAdmin, validate(jobSchema), async (re
 
     return res.status(201).json(result.rows[0])
   } catch (error) {
-    console.error('Error creating job:', error)
+    console.error('creating job:', error.message)
     return res.status(500).json({ error: 'Failed to create job' })
   }
 })
@@ -91,7 +91,7 @@ router.put('/admin/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error updating job:', error)
+    console.error('updating job:', error.message)
     return res.status(500).json({ error: 'Failed to update job' })
   }
 })
@@ -111,7 +111,7 @@ router.patch('/admin/:id/toggle', authenticate, requireAdmin, async (req, res) =
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error toggling job:', error)
+    console.error('toggling job:', error.message)
     return res.status(500).json({ error: 'Failed to toggle job' })
   }
 })
@@ -127,7 +127,7 @@ router.delete('/admin/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json({ message: 'Job deleted successfully' })
   } catch (error) {
-    console.error('Error deleting job:', error)
+    console.error('deleting job:', error.message)
     return res.status(500).json({ error: 'Failed to delete job' })
   }
 })
@@ -149,7 +149,7 @@ router.post('/:id/apply', async (req, res) => {
 
     return res.status(201).json(result.rows[0])
   } catch (error) {
-    console.error('Error submitting application:', error)
+    console.error('submitting application:', error.message)
     return res.status(500).json({ error: 'Failed to submit application' })
   }
 })
@@ -177,7 +177,7 @@ router.get('/admin/applications', authenticate, requireAdmin, async (req, res) =
     const result = await db.query(query, params)
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching applications:', error)
+    console.error('fetching applications:', error.message)
     return res.status(500).json({ error: 'Failed to fetch applications' })
   }
 })
@@ -221,7 +221,7 @@ router.post('/admin/applications/:id/email', authenticate, requireAdmin, async (
       newStatus: newStatus || application.status,
     })
   } catch (error) {
-    console.error('Error emailing applicant:', error)
+    console.error('emailing applicant:', error.message)
     return res.status(500).json({ error: error.message || 'Failed to dispatch email' })
   }
 })
@@ -247,7 +247,7 @@ router.patch('/admin/applications/:id/status', authenticate, requireAdmin, async
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error updating application status:', error)
+    console.error('updating application status:', error.message)
     return res.status(500).json({ error: 'Failed to update application status' })
   }
 })
@@ -266,7 +266,7 @@ router.get('/admin/applications/:id/emails', authenticate, requireAdmin, async (
     )
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching application emails:', error)
+    console.error('fetching application emails:', error.message)
     return res.status(500).json({ error: 'Failed to fetch application emails' })
   }
 })

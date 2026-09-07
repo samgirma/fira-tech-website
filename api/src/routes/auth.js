@@ -59,7 +59,7 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req, res) => {
       message: 'Login successful',
     })
   } catch (error) {
-    console.error('Login error:', error)
+    console.error('Login failed:', error.message)
     return res.status(500).json({ error: 'Internal server error' })
   }
 })

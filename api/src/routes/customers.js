@@ -16,7 +16,7 @@ router.get('/', authenticate, requireAdmin, async (req, res) => {
     )
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching customers:', error)
+    console.error('fetching customers:', error.message)
     return res.status(500).json({ error: 'Failed to fetch customers' })
   }
 })
@@ -40,7 +40,7 @@ router.get('/:id', authenticate, requireAdmin, async (req, res) => {
       projects: projects.rows,
     })
   } catch (error) {
-    console.error('Error fetching customer:', error)
+    console.error('fetching customer:', error.message)
     return res.status(500).json({ error: 'Failed to fetch customer' })
   }
 })
@@ -62,7 +62,7 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(201).json(result.rows[0])
   } catch (error) {
-    console.error('Error creating customer:', error)
+    console.error('creating customer:', error.message)
     return res.status(500).json({ error: 'Failed to create customer' })
   }
 })
@@ -91,7 +91,7 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error updating customer:', error)
+    console.error('updating customer:', error.message)
     return res.status(500).json({ error: 'Failed to update customer' })
   }
 })
@@ -107,7 +107,7 @@ router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json({ message: 'Customer deleted successfully' })
   } catch (error) {
-    console.error('Error deleting customer:', error)
+    console.error('deleting customer:', error.message)
     return res.status(500).json({ error: 'Failed to delete customer' })
   }
 })

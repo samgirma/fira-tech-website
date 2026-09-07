@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
     )
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching social links:', error)
+    console.error('fetching social links:', error.message)
     return res.status(500).json({ error: 'Failed to fetch social links' })
   }
 })
@@ -24,7 +24,7 @@ router.get('/admin', authenticate, requireAdmin, async (req, res) => {
     const result = await db.query('SELECT * FROM social_links ORDER BY sort_order ASC')
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching social links:', error)
+    console.error('fetching social links:', error.message)
     return res.status(500).json({ error: 'Failed to fetch social links' })
   }
 })
@@ -42,7 +42,7 @@ router.post('/admin', authenticate, requireAdmin, validate(socialLinkSchema), as
 
     return res.status(201).json(result.rows[0])
   } catch (error) {
-    console.error('Error creating social link:', error)
+    console.error('creating social link:', error.message)
     return res.status(500).json({ error: 'Failed to create social link' })
   }
 })
@@ -70,7 +70,7 @@ router.put('/admin/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error updating social link:', error)
+    console.error('updating social link:', error.message)
     return res.status(500).json({ error: 'Failed to update social link' })
   }
 })
@@ -86,7 +86,7 @@ router.delete('/admin/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json({ message: 'Social link deleted successfully' })
   } catch (error) {
-    console.error('Error deleting social link:', error)
+    console.error('deleting social link:', error.message)
     return res.status(500).json({ error: 'Failed to delete social link' })
   }
 })

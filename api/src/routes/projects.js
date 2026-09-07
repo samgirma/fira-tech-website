@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
     )
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching projects:', error)
+    console.error('fetching projects:', error.message)
     return res.status(500).json({ error: 'Failed to fetch projects' })
   }
 })
@@ -43,7 +43,7 @@ router.get('/stats', authenticate, requireAdmin, async (req, res) => {
     )
     return res.status(200).json(result.rows)
   } catch (error) {
-    console.error('Error fetching project stats:', error)
+    console.error('fetching project stats:', error.message)
     return res.status(500).json({ error: 'Failed to fetch project stats' })
   }
 })
@@ -126,7 +126,7 @@ router.get('/:id', async (req, res) => {
       },
     })
   } catch (error) {
-    console.error('Error fetching project:', error)
+    console.error('fetching project:', error.message)
     return res.status(500).json({ error: 'Failed to fetch project' })
   }
 })
@@ -174,7 +174,7 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(201).json(result.rows[0])
   } catch (error) {
-    console.error('Error creating project:', error)
+    console.error('creating project:', error.message)
     return res.status(500).json({ error: 'Failed to create project' })
   }
 })
@@ -241,7 +241,7 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(200).json(result.rows[0])
   } catch (error) {
-    console.error('Error updating project:', error)
+    console.error('updating project:', error.message)
     return res.status(500).json({ error: 'Failed to update project' })
   }
 })
@@ -280,7 +280,7 @@ router.post('/:id/tasks', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(201).json(result.rows[0])
   } catch (error) {
-    console.error('Error creating project task:', error)
+    console.error('creating project task:', error.message)
     return res.status(500).json({ error: 'Failed to create task' })
   }
 })
@@ -356,7 +356,7 @@ router.post('/:id/github', authenticate, requireAdmin, async (req, res) => {
 
     return res.status(201).json(result.rows[0])
   } catch (error) {
-    console.error('Error linking repo:', error)
+    console.error('linking repo:', error.message)
     return res.status(500).json({ error: 'Failed to link repository' })
   }
 })
