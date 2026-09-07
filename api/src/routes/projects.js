@@ -104,7 +104,7 @@ router.get('/:id', async (req, res) => {
           [primaryRepo.id]
         ),
         db.query(
-          `SELECT * FROM github_workflow_runs WHERE repository_id = $1 ORDER BY run_started_at DESC NULLS LAST LIMIT 5`,
+          `SELECT * FROM github_workflow_runs WHERE repository_id = $1 ORDER BY started_at_github DESC NULLS LAST LIMIT 5`,
           [primaryRepo.id]
         ),
       ])
