@@ -249,7 +249,11 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
 // DELETE /api/projects/:id - Admin: delete project
 router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
   try {
-    await db.query('DELETE FROM tasks WHERE project_id = $1', [req.params.id])
+    await db.query('UPDATE tasks SET project_id = NULL WHERE project_id = $1', [req.params.id])
+    await db.query('UPDATE revenue SET project_id = NULL WHERE project_id = $1', [req.params.id])
+    await db.query('UPDATE expenses SET project_id = NULL WHERE project_id = $1', [req.params.id])
+    await db.query('UPDATE invoices SET project_id = NULL WHERE project_id = $1', [req.params.id])
+    await db.query('UPDATE portfolio_projects SET project_id = NULL WHERE project_id = $1', [req.params.id])
     await db.query('DELETE FROM project_github_repositories WHERE project_id = $1', [req.params.id])
     const result = await db.query('DELETE FROM projects WHERE id = $1 RETURNING id', [req.params.id])
     if (result.rows.length === 0) {
@@ -257,6 +261,7 @@ router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
     }
     return res.status(200).json({ message: 'Project deleted successfully' })
   } catch (error) {
+    console.error('deleting project:', error.message)
     return res.status(500).json({ error: 'Failed to delete project' })
   }
 })
@@ -370,6 +375,7 @@ router.delete('/:id/github/:repoId', authenticate, requireAdmin, async (req, res
     )
     return res.status(200).json({ message: 'Repository unlinked successfully' })
   } catch (error) {
+    console.error('unlinking repo:', error.message)
     return res.status(500).json({ error: 'Failed to unlink repository' })
   }
 })

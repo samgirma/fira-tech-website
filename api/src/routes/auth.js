@@ -81,6 +81,7 @@ router.post('/refresh', authenticate, async (req, res) => {
       message: 'Session refreshed',
     })
   } catch (error) {
+    console.error('refreshing session:', error.message)
     return res.status(500).json({ error: 'Failed to refresh session' })
   }
 })

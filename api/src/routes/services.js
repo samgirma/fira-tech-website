@@ -37,6 +37,7 @@ router.get('/:id', async (req, res) => {
     }
     return res.status(200).json(result.rows[0])
   } catch (error) {
+    console.error('deleting service:', error.message)
     return res.status(500).json({ error: 'Failed to fetch service' })
   }
 })
@@ -161,6 +162,7 @@ router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
     }
     return res.status(200).json({ message: 'Service deleted successfully' })
   } catch (error) {
+    console.error('deleting service category:', error.message)
     return res.status(500).json({ error: 'Failed to delete service' })
   }
 })

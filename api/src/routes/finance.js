@@ -172,6 +172,7 @@ router.delete('/revenue/:id', authenticate, requireAdmin, async (req, res) => {
     if (result.rows.length === 0) return res.status(404).json({ error: 'Entry not found' })
     return res.status(200).json({ message: 'Revenue entry deleted' })
   } catch (error) {
+    console.error('deleting revenue:', error.message)
     return res.status(500).json({ error: 'Failed to delete revenue entry' })
   }
 })
@@ -221,6 +222,7 @@ router.delete('/expenses/:id', authenticate, requireAdmin, async (req, res) => {
     if (result.rows.length === 0) return res.status(404).json({ error: 'Expense not found' })
     return res.status(200).json({ message: 'Expense deleted' })
   } catch (error) {
+    console.error('deleting expense:', error.message)
     return res.status(500).json({ error: 'Failed to delete expense' })
   }
 })
@@ -323,6 +325,7 @@ router.delete('/invoices/:id', authenticate, requireAdmin, async (req, res) => {
     if (result.rows.length === 0) return res.status(404).json({ error: 'Invoice not found' })
     return res.status(200).json({ message: 'Invoice deleted successfully' })
   } catch (error) {
+    console.error('updating invoice:', error.message)
     return res.status(500).json({ error: 'Failed to delete invoice' })
   }
 })
