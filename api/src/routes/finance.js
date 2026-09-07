@@ -129,11 +129,10 @@ router.get('/revenue', authenticate, requireAdmin, async (req, res) => {
   try {
     const result = await db.query(
       `SELECT r.*, 
-              COALESCE(cl.name, c.name) as client_name,
+              cl.name as client_name,
               p.name as project_name
        FROM revenue r
        LEFT JOIN clients cl ON r.client_id = cl.id
-       LEFT JOIN customers c ON r.customer_id = c.id
        LEFT JOIN projects p ON r.project_id = p.id
        ORDER BY r.date DESC`
     )
@@ -147,18 +146,16 @@ router.get('/revenue', authenticate, requireAdmin, async (req, res) => {
 // POST /api/finance/revenue - Admin: create revenue entry
 router.post('/revenue', authenticate, requireAdmin, async (req, res) => {
   try {
-    const { clientId, customerId, projectId, amount, category, description, date, paymentStatus } = req.body
+    const { clientId, projectId, amount, category, description, date, paymentStatus } = req.body
 
     if (!amount || !date) {
       return res.status(400).json({ error: 'Amount and date are required' })
     }
 
-    const cId = clientId || customerId || null
-
     const result = await db.query(
-      `INSERT INTO revenue (client_id, customer_id, project_id, amount, category, description, date, payment_status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [cId, cId, projectId || null, parseFloat(amount), category || 'Development', description || null, date, paymentStatus || 'paid']
+      `INSERT INTO revenue (client_id, project_id, amount, category, description, date, payment_status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [clientId || null, projectId || null, parseFloat(amount), category || 'Development', description || null, date, paymentStatus || 'paid']
     )
 
     return res.status(201).json(result.rows[0])
@@ -233,12 +230,11 @@ router.get('/invoices', authenticate, requireAdmin, async (req, res) => {
   try {
     const result = await db.query(
       `SELECT i.*, 
-              COALESCE(cl.name, c.name) as client_name,
-              COALESCE(cl.email, c.email) as client_email,
+              cl.name as client_name,
+              cl.email as client_email,
               p.name as project_name
        FROM invoices i
        LEFT JOIN clients cl ON i.client_id = cl.id
-       LEFT JOIN customers c ON i.customer_id = c.id
        LEFT JOIN projects p ON i.project_id = p.id
        ORDER BY i.issue_date DESC`
     )
@@ -252,22 +248,20 @@ router.get('/invoices', authenticate, requireAdmin, async (req, res) => {
 // POST /api/finance/invoices - Admin: create invoice
 router.post('/invoices', authenticate, requireAdmin, async (req, res) => {
   try {
-    const { clientId, customerId, projectId, amount, issueDate, dueDate, notes, status = 'draft' } = req.body
+    const { clientId, projectId, amount, issueDate, dueDate, notes, status = 'draft' } = req.body
 
     if (!amount || !issueDate || !dueDate) {
       return res.status(400).json({ error: 'Amount, issueDate, and dueDate are required' })
     }
-
-    const cId = clientId || customerId || null
 
     // Generate invoice number
     const count = await db.query('SELECT COUNT(*) FROM invoices')
     const invoiceNumber = `INV-${String(parseInt(count.rows[0].count) + 1).padStart(4, '0')}`
 
     const result = await db.query(
-      `INSERT INTO invoices (invoice_number, client_id, customer_id, project_id, amount, issue_date, due_date, status, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-      [invoiceNumber, cId, cId, projectId || null, parseFloat(amount), issueDate, dueDate, status, notes || null]
+      `INSERT INTO invoices (invoice_number, client_id, project_id, amount, issue_date, due_date, status, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [invoiceNumber, clientId || null, projectId || null, parseFloat(amount), issueDate, dueDate, status, notes || null]
     )
 
     return res.status(201).json(result.rows[0])
@@ -303,11 +297,10 @@ router.put('/invoices/:id', authenticate, requireAdmin, async (req, res) => {
     // If marked paid and was previously unpaid, automatically create revenue entry
     if (status === 'paid' && invoice.status !== 'paid') {
       await db.query(
-        `INSERT INTO revenue (client_id, customer_id, project_id, amount, category, description, date, payment_status)
-         VALUES ($1, $2, $3, $4, 'Invoiced Work', $5, $6, 'paid')`,
+        `INSERT INTO revenue (client_id, project_id, amount, category, description, date, payment_status)
+         VALUES ($1, $2, $3, 'Invoiced Work', $4, $5, 'paid')`,
         [
           invoice.client_id,
-          invoice.customer_id,
           invoice.project_id,
           invoice.amount,
           `Payment for Invoice ${invoice.invoice_number}`,
