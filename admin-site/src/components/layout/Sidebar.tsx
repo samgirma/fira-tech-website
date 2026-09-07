@@ -3,38 +3,25 @@ import { Link, useLocation } from 'react-router-dom'
 import { cn } from '../../lib/utils'
 import {
   LayoutDashboard,
-  CalendarDays,
-  Users,
-  UserPlus,
-  Inbox,
-  FileText,
-  FolderKanban,
-  ListTodo,
   Globe,
-  Image,
+  Briefcase,
   Newspaper,
   Star,
-  Package,
-  Rocket,
-  Briefcase,
-  FileUser,
+  Users,
+  Image,
+  Sliders,
+  GitBranch,
+  FolderKanban,
+  Kanban,
+  Receipt,
   DollarSign,
   BarChart3,
-  Lightbulb,
-  Target,
-  Bell,
   Settings,
-  History,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  GitBranch,
+  FileUser,
 } from 'lucide-react'
-
-interface NavGroup {
-  label: string
-  items: NavItem[]
-}
 
 interface NavItem {
   label: string
@@ -43,192 +30,202 @@ interface NavItem {
   badge?: number
 }
 
+interface NavGroup {
+  label: string
+  items: NavItem[]
+}
+
 const navigation: NavGroup[] = [
   {
-    label: 'OVERVIEW',
+    label: 'DASHBOARD',
     items: [
       { label: 'Overview', href: '/overview', icon: LayoutDashboard },
-      { label: 'My Day', href: '/my-day', icon: CalendarDays },
     ],
   },
   {
-    label: 'BUSINESS',
+    label: 'WEBSITE',
     items: [
-      { label: 'Leads', href: '/business/leads', icon: UserPlus },
-      { label: 'Customers', href: '/business/customers', icon: Users },
-      { label: 'Requests', href: '/business/requests', icon: Inbox },
-    ],
-  },
-  {
-    label: 'OPERATIONS',
-    items: [
-      { label: 'Projects', href: '/projects', icon: FolderKanban },
-      { label: 'Tasks', href: '/tasks', icon: ListTodo },
-    ],
-  },
-  {
-    label: 'ENGINEERING',
-    items: [
-      { label: 'GitHub Overview', href: '/github', icon: GitBranch },
-      { label: 'Repositories', href: '/github/repositories', icon: GitBranch },
-      { label: 'Issues', href: '/github/issues', icon: GitBranch },
-      { label: 'Pull Requests', href: '/github/pull-requests', icon: GitBranch },
-      { label: 'Releases', href: '/github/releases', icon: GitBranch },
-      { label: 'Workflows', href: '/github/workflows', icon: GitBranch },
-      { label: 'Members', href: '/github/members', icon: Users },
-      { label: 'Activity', href: '/github/activity', icon: GitBranch },
-    ],
-  },
-  {
-    label: 'CONTENT',
-    items: [
-      { label: 'Website', href: '/website', icon: Globe },
-      { label: 'Portfolio', href: '/website/portfolio', icon: Image },
+      { label: 'Content', href: '/website/content', icon: Globe },
+      { label: 'Portfolio / Case Studies', href: '/website/portfolio', icon: Briefcase },
       { label: 'Blog', href: '/website/blog', icon: Newspaper },
       { label: 'Testimonials', href: '/website/testimonials', icon: Star },
-      { label: 'Media', href: '/website/media', icon: Image },
+      { label: 'Careers Postings', href: '/website/careers', icon: FileUser },
+      { label: 'Media Library', href: '/website/media', icon: Image },
+      { label: 'Site Settings', href: '/website/settings', icon: Sliders },
     ],
   },
   {
-    label: 'PRODUCTS',
+    label: 'CLIENTS',
     items: [
-      { label: 'Products', href: '/products', icon: Package },
-      { label: 'Roadmap', href: '/products/roadmap', icon: Rocket },
+      { label: 'Pipeline', href: '/clients/pipeline', icon: Kanban },
+      { label: 'Client Directory', href: '/clients/directory', icon: Users },
     ],
   },
   {
-    label: 'PEOPLE',
+    label: 'PROJECTS',
     items: [
-      { label: 'Careers', href: '/careers', icon: Briefcase },
-      { label: 'Applications', href: '/careers/applications', icon: FileUser },
+      { label: 'All Projects', href: '/projects', icon: FolderKanban },
+      { label: 'GitHub Organization', href: '/projects/github', icon: GitBranch },
     ],
   },
   {
-    label: 'MONEY',
+    label: 'FINANCE',
     items: [
-      { label: 'Revenue', href: '/finance/revenue', icon: DollarSign },
-      { label: 'Expenses', href: '/finance/expenses', icon: DollarSign },
-      { label: 'Invoices', href: '/finance/invoices', icon: FileText },
+      { label: 'Invoices', href: '/finance/invoices', icon: Receipt },
+      { label: 'Revenue & Expenses', href: '/finance/ledger', icon: DollarSign },
+      { label: 'Reports', href: '/finance/reports', icon: BarChart3 },
     ],
   },
   {
-    label: 'INSIGHTS',
+    label: 'SETTINGS',
     items: [
-      { label: 'Analytics', href: '/analytics', icon: BarChart3 },
-      { label: 'Insights', href: '/insights', icon: Lightbulb },
-      { label: 'Goals', href: '/goals', icon: Target },
-    ],
-  },
-  {
-    label: 'SYSTEM',
-    items: [
-      { label: 'Notifications', href: '/notifications', icon: Bell },
-      { label: 'Settings', href: '/settings', icon: Settings },
-      { label: 'Audit Log', href: '/audit', icon: History },
+      { label: 'Platform & Integrations', href: '/settings', icon: Settings },
     ],
   },
 ]
 
 interface SidebarProps {
-  isCollapsed: boolean
-  onToggle: () => void
+  collapsed: boolean
+  onToggleCollapse: () => void
 }
 
-export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
+export default function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
   const location = useLocation()
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(
-    navigation.map((g) => g.label)
-  )
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
 
-  const toggleGroup = (label: string) => {
-    setExpandedGroups((prev) =>
-      prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label]
-    )
+  const toggleGroup = (groupLabel: string) => {
+    setCollapsedGroups((prev) => ({
+      ...prev,
+      [groupLabel]: !prev[groupLabel],
+    }))
+  }
+
+  const isActive = (href: string) => {
+    if (href === '/overview') {
+      return location.pathname === '/' || location.pathname === '/overview'
+    }
+    return location.pathname.startsWith(href)
   }
 
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 h-full bg-white border-r border-surface-200 z-40 transition-all duration-300 flex flex-col',
-        isCollapsed ? 'w-[68px]' : 'w-[260px]'
+        'fixed left-0 top-0 z-40 h-screen bg-white dark:bg-surface-900 border-r border-surface-200 dark:border-surface-800 transition-all duration-300 flex flex-col',
+        collapsed ? 'w-20' : 'w-64'
       )}
     >
-      {/* Logo */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-surface-100">
-        {!isCollapsed && (
-          <Link to="/overview" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
-              <span className="text-sm font-bold text-white">F</span>
+      {/* Brand Header */}
+      <div className="h-16 flex items-center justify-between px-4 border-b border-surface-100 dark:border-surface-800">
+        <Link to="/overview" className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-600 to-brand-800 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-brand-600/20">
+            F
+          </div>
+          {!collapsed && (
+            <div className="flex flex-col">
+              <span className="font-semibold text-surface-900 dark:text-surface-100 text-sm leading-tight">
+                Fira Command
+              </span>
+              <span className="text-2xs text-gold-600 dark:text-gold-400 font-medium uppercase tracking-wider">
+                Founder OS
+              </span>
             </div>
-            <span className="font-semibold text-surface-900 tracking-tight">
-              Fira Command
-            </span>
-          </Link>
-        )}
+          )}
+        </Link>
         <button
-          onClick={onToggle}
-          className="p-1.5 rounded-lg hover:bg-surface-100 text-surface-400 hover:text-surface-600 transition-colors"
+          onClick={onToggleCollapse}
+          className="p-1.5 rounded-lg text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4 scrollbar-thin">
-        {navigation.map((group) => (
-          <div key={group.label} className="mb-2">
-            {!isCollapsed && (
-              <button
-                onClick={() => toggleGroup(group.label)}
-                className="w-full flex items-center justify-between px-4 py-1.5 text-2xs font-semibold text-surface-400 uppercase tracking-wider hover:text-surface-600"
-              >
-                {group.label}
-                <ChevronDown
-                  size={14}
-                  className={cn(
-                    'transition-transform',
-                    expandedGroups.includes(group.label) ? '' : '-rotate-90'
-                  )}
-                />
-              </button>
-            )}
-            {(isCollapsed || expandedGroups.includes(group.label)) && (
-              <div className="space-y-0.5 px-2">
-                {group.items.map((item) => {
-                  const isActive = location.pathname === item.href || 
-                    (item.href !== '/overview' && item.href !== '/my-day' && location.pathname.startsWith(item.href))
-                  return (
-                    <Link
-                      key={item.href}
-                      to={item.href}
-                      className={cn(
-                        'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                        isActive
-                          ? 'bg-brand-50 text-brand-700'
-                          : 'text-surface-600 hover:bg-surface-50 hover:text-surface-900',
-                        isCollapsed && 'justify-center px-2'
-                      )}
-                      title={isCollapsed ? item.label : undefined}
-                    >
-                      <item.icon size={18} className={cn(isActive && 'text-brand-600')} />
-                      {!isCollapsed && (
-                        <>
-                          <span className="flex-1">{item.label}</span>
-                          {item.badge && (
-                            <span className="px-1.5 py-0.5 text-2xs font-medium bg-brand-100 text-brand-700 rounded-full">
-                              {item.badge}
-                            </span>
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6 scrollbar-thin">
+        {navigation.map((group) => {
+          const isGroupCollapsed = collapsedGroups[group.label]
+
+          return (
+            <div key={group.label} className="space-y-1">
+              {!collapsed && (
+                <button
+                  onClick={() => toggleGroup(group.label)}
+                  className="w-full flex items-center justify-between px-3 py-1 text-2xs font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-wider hover:text-surface-600 dark:hover:text-surface-300 transition-colors"
+                >
+                  <span>{group.label}</span>
+                  <ChevronDown
+                    size={12}
+                    className={cn(
+                      'transition-transform duration-200',
+                      isGroupCollapsed && '-rotate-90'
+                    )}
+                  />
+                </button>
+              )}
+
+              {(!isGroupCollapsed || collapsed) && (
+                <div className="space-y-0.5">
+                  {group.items.map((item) => {
+                    const active = isActive(item.href)
+                    const Icon = item.icon
+
+                    return (
+                      <Link
+                        key={item.href}
+                        to={item.href}
+                        className={cn(
+                          'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all group relative',
+                          active
+                            ? 'bg-brand-50 dark:bg-brand-950/50 text-brand-700 dark:text-brand-300 font-semibold'
+                            : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100'
+                        )}
+                        title={collapsed ? item.label : undefined}
+                      >
+                        <Icon
+                          size={18}
+                          className={cn(
+                            'shrink-0 transition-colors',
+                            active
+                              ? 'text-brand-600 dark:text-brand-400'
+                              : 'text-surface-400 dark:text-surface-500 group-hover:text-surface-600 dark:group-hover:text-surface-300'
                           )}
-                        </>
-                      )}
-                    </Link>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        ))}
+                        />
+
+                        {!collapsed && (
+                          <>
+                            <span className="truncate">{item.label}</span>
+                            {item.badge !== undefined && item.badge > 0 && (
+                              <span className="ml-auto px-2 py-0.5 text-xs font-semibold rounded-full bg-brand-100 dark:bg-brand-900 text-brand-700 dark:text-brand-300">
+                                {item.badge}
+                              </span>
+                            )}
+                          </>
+                        )}
+
+                        {/* Active indicator bar */}
+                        {active && (
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-brand-600 rounded-r-full" />
+                        )}
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )
+        })}
       </nav>
+
+      {/* Footer / Status */}
+      <div className="p-3 border-t border-surface-100 dark:border-surface-800">
+        <div className={cn(
+          'flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-50 dark:bg-surface-800/50 text-xs text-surface-500 dark:text-surface-400',
+          collapsed && 'justify-center'
+        )}>
+          <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+          {!collapsed && <span className="truncate">Production Live</span>}
+        </div>
+      </div>
     </aside>
   )
 }

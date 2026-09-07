@@ -1,10 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { site } from "@/lib/api";
 import { OdaTreeVisual } from "@/components/tree/OdaTreeVisual";
-import { TechnologyEcosystem3D } from "@/components/three-d/TechnologyEcosystem3D";
+
+const TechnologyEcosystem3D = lazy(() =>
+  import("@/components/three-d/TechnologyEcosystem3D").then((m) => ({
+    default: m.TechnologyEcosystem3D,
+  }))
+);
 
 export function Hero() {
   const [data, setData] = useState<any>(null);
@@ -43,9 +48,17 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.35 }}
             className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-display font-bold leading-[1.08] mb-6"
           >
-            <span className="text-foreground">Building technology </span>
-            <br className="hidden md:block" />
-            <span className="text-gradient-gold">that moves ideas forward.</span>
+            {settings.hero_headline ? (
+              <span className="text-foreground">
+                {settings.hero_headline}
+              </span>
+            ) : (
+              <>
+                <span className="text-foreground">Building technology </span>
+                <br className="hidden md:block" />
+                <span className="text-gradient-gold">that moves ideas forward.</span>
+              </>
+            )}
           </motion.h1>
 
           <motion.p
@@ -54,30 +67,33 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.5 }}
             className="text-lg text-muted-foreground max-w-xl mb-10 leading-relaxed"
           >
-            We design and build digital products, software platforms, and technology solutions that turn real-world problems into useful experiences.
+            {settings.hero_subheadline ||
+              "We design and build digital products, software platforms, and technology solutions that turn real-world problems into useful experiences."}
           </motion.p>
 
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.65 }}
-            className="flex flex-col sm:flex-row gap-4"
+            className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4"
           >
             <Link
-              to="/start-a-project"
-              className="inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-gradient-to-r from-accent to-amber-500 text-obsidian font-semibold rounded-full hover:shadow-lg hover:shadow-accent/20 transition-all duration-300 text-base"
+              to="/start-project"
+              className="btn-gold text-center inline-flex items-center justify-center gap-2 group"
             >
-              Start a Project
-              <ArrowRight className="w-4.5 h-4.5" />
+              <span>{settings.hero_cta_primary || "Start a Project"}</span>
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
+
             <Link
               to="/work"
-              className="inline-flex items-center justify-center gap-2.5 px-8 py-4 border border-border/50 text-foreground font-medium rounded-full hover:bg-muted/30 transition-all duration-300 text-base"
+              className="btn-outline-forest text-center inline-flex items-center justify-center"
             >
-              Explore Our Work
+              <span>Explore Our Work</span>
             </Link>
           </motion.div>
 
+          {/* Key metrics strip */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -85,19 +101,21 @@ export function Hero() {
             className="mt-12 flex items-center gap-8"
           >
             {[
-              { value: "50+", label: "Projects" },
-              { value: "5+", label: "Years" },
-              { value: "30+", label: "Clients" },
+              { value: settings.stat_projects || "40+", label: "Sovereign Builds" },
+              { value: settings.stat_years || "7+", label: "Years Mastery" },
+              { value: settings.stat_satisfaction || "100%", label: "Client Trust" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
-                <div className="text-xl md:text-2xl font-display font-bold text-accent">{stat.value}</div>
+                <div className="text-xl md:text-2xl font-display font-bold text-accent">
+                  {stat.value}
+                </div>
                 <div className="text-xs text-muted-foreground mt-0.5">{stat.label}</div>
               </div>
             ))}
           </motion.div>
         </div>
 
-        {/* Right: 3D Technology Ecosystem */}
+        {/* Right: 3D Technology Ecosystem (Lazy-Loaded) */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -107,7 +125,15 @@ export function Hero() {
           <div className="relative">
             {/* Glow behind 3D */}
             <div className="absolute -inset-8 bg-gradient-to-br from-forest/10 to-accent/5 rounded-3xl blur-3xl" />
-            <TechnologyEcosystem3D className="relative w-full aspect-square max-w-lg mx-auto" />
+            <Suspense
+              fallback={
+                <div className="relative w-full aspect-square max-w-lg mx-auto flex items-center justify-center">
+                  <div className="w-10 h-10 border-2 border-accent border-t-transparent rounded-full animate-spin opacity-40" />
+                </div>
+              }
+            >
+              <TechnologyEcosystem3D className="relative w-full aspect-square max-w-lg mx-auto" />
+            </Suspense>
           </div>
         </motion.div>
       </div>

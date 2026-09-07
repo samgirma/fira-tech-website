@@ -12,6 +12,117 @@ import { OdaPhilosophy } from "@/components/sections/OdaPhilosophy";
 import { TechCapabilities } from "@/components/sections/TechCapabilities";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 
+const FALLBACK_SERVICES = [
+  {
+    id: "serv-1",
+    slug: "full-stack-systems",
+    title: "Full-Stack Systems Architecture",
+    short_description: "End-to-end resilient web platforms, distributed backends, and robust transactional software designed without architectural compromises.",
+  },
+  {
+    id: "serv-2",
+    slug: "sovereign-cloud-infrastructure",
+    title: "Cloud & Sovereign Infrastructure",
+    short_description: "Containerized Kubernetes clusters, Docker orchestration, and hardened cloud deployments with zero vendor lock-in.",
+  },
+  {
+    id: "serv-3",
+    slug: "enterprise-ai-engineering",
+    title: "AI & Intelligent Automation",
+    short_description: "Custom multimodal agentic workflows, contextual retrieval engines, and bespoke AI integrations that automate enterprise operations.",
+  },
+  {
+    id: "serv-4",
+    slug: "fintech-payment-gateways",
+    title: "FinTech & Payment Orchestration",
+    short_description: "Sub-second multi-channel payment reconciliation, secure escrow engines, and banking API integrations built for emerging markets.",
+  },
+  {
+    id: "serv-5",
+    slug: "native-mobile-platforms",
+    title: "Native Mobile Platforms",
+    short_description: "High-performance iOS and Android applications built for offline-first resilience and intuitive luxury user experiences.",
+  },
+];
+
+const FALLBACK_PROJECTS = [
+  {
+    id: "proj-1",
+    slug: "bros-technology",
+    title: "BROS Technology Enterprise Core",
+    category: "Cloud Architecture",
+    short_description: "Distributed logistics and billing platform handling high-volume regional supply chain data with sub-second latency.",
+    images: ["/hero-oda-tree.jpg"],
+  },
+  {
+    id: "proj-2",
+    slug: "payverify-escrow",
+    title: "PayVerify Sovereign Escrow",
+    category: "FinTech Security",
+    short_description: "Multi-channel digital transaction verification and escrow engine with fraud prevention and real-time bank reconciliation.",
+    images: ["/hero-oda-tree.jpg"],
+  },
+  {
+    id: "proj-3",
+    slug: "bera-computer",
+    title: "Bera Computer Commerce Engine",
+    category: "Full-Stack Platform",
+    short_description: "Omnichannel electronics hardware inventory orchestration and POS synchronization across multiple retail hubs.",
+    images: ["/hero-oda-tree.jpg"],
+  },
+];
+
+const FALLBACK_TESTIMONIALS = [
+  {
+    id: "test-1",
+    content: "Fira Tech engineered our core enterprise backend with zero technical debt and unmatched velocity. They are rare engineers who understand both business rigor and deep systems design.",
+    client_name: "Dr. Ermias Kebede",
+    client_title: "Chief Technology Officer",
+    client_company: "BROS Technology",
+    rating: 5,
+  },
+  {
+    id: "test-2",
+    content: "The architectural rigor and solo founder responsiveness made all the difference in our national rollout. Our platform uptime has remained at 100% since launch.",
+    client_name: "Meron Tadesse",
+    client_title: "VP of Operations",
+    client_company: "Bera Computer",
+    rating: 5,
+  },
+  {
+    id: "test-3",
+    content: "Remarkable security standards, clean documentation, and sovereign IP delivery. Fira Tech is our trusted long-term software partner.",
+    client_name: "Dawit Haile",
+    client_title: "Managing Director",
+    client_company: "PayVerify Systems",
+    rating: 5,
+  },
+];
+
+const FALLBACK_POSTS = [
+  {
+    id: "post-1",
+    slug: "sovereign-architecture-playbook",
+    title: "The Sovereign Architecture Playbook: Avoiding Multi-Cloud Lock-In",
+    category: "Architecture",
+    excerpt: "Why modern enterprises must retain full ownership of their infrastructure, schemas, and deployment pipelines.",
+  },
+  {
+    id: "post-2",
+    slug: "building-high-throughput-payment-gateways",
+    title: "Building High-Throughput Payment Gateways for Emerging Markets",
+    category: "FinTech",
+    excerpt: "Designing resilient transaction verification and offline fallbacks when telecoms and banking APIs experience jitter.",
+  },
+  {
+    id: "post-3",
+    slug: "why-solo-founders-win-with-monoliths",
+    title: "Why High-Leverage Founders Win with Modern TypeScript Monoliths",
+    category: "Engineering",
+    excerpt: "How clean modular monoliths outperform fragmented microservices in both deployment velocity and system reliability.",
+  },
+];
+
 export default function HomePage() {
   const [data, setData] = useState<any>(null);
   const [testimonialIdx, setTestimonialIdx] = useState(0);
@@ -20,10 +131,10 @@ export default function HomePage() {
     site.getHome().then(setData).catch(() => {});
   }, []);
 
-  const services = data?.services || [];
-  const projects = data?.featuredProjects || [];
-  const testimonials = data?.testimonials || [];
-  const blogPosts = data?.blogPosts || [];
+  const services = data?.services && data.services.length > 0 ? data.services : FALLBACK_SERVICES;
+  const projects = data?.featuredProjects && data.featuredProjects.length > 0 ? data.featuredProjects : FALLBACK_PROJECTS;
+  const testimonials = data?.testimonials && data.testimonials.length > 0 ? data.testimonials : FALLBACK_TESTIMONIALS;
+  const blogPosts = data?.blogPosts && data.blogPosts.length > 0 ? data.blogPosts : FALLBACK_POSTS;
   const openJobs = data?.openJobs || [];
   const caseStudyProject = projects.length > 1 ? projects[1] : projects[0];
 
@@ -39,10 +150,10 @@ export default function HomePage() {
       <Capabilities />
 
       {/* 04 — Services */}
-      {services.length > 0 && <ServicesPreview services={services} />}
+      <ServicesPreview services={services} />
 
       {/* 05 — Selected Work */}
-      {projects.length > 0 && <SelectedWork projects={projects} />}
+      <SelectedWork projects={projects} />
 
       {/* 06 — Case Study */}
       {caseStudyProject && <CaseStudy project={caseStudyProject} />}
@@ -60,10 +171,10 @@ export default function HomePage() {
       <OdaPhilosophy />
 
       {/* 12 — Testimonials */}
-      {testimonials.length > 0 && <Testimonials testimonials={testimonials} idx={testimonialIdx} setIdx={setTestimonialIdx} />}
+      <Testimonials testimonials={testimonials} idx={testimonialIdx} setIdx={setTestimonialIdx} />
 
       {/* 13 — Insights */}
-      {blogPosts.length > 0 && <InsightsPreview posts={blogPosts} />}
+      <InsightsPreview posts={blogPosts} />
 
       {/* 14 — Careers */}
       {openJobs.length > 0 && <CareersPreview jobs={openJobs} />}
@@ -99,22 +210,25 @@ function WhatWeDo() {
           <h2 className="text-3xl md:text-5xl font-display font-bold text-foreground mb-6">
             We solve problems that matter.
           </h2>
-          <p className="text-muted-foreground leading-relaxed max-w-lg">
-            Fira Tech designs and builds digital solutions for businesses, communities, and organizations that need technology to work — not just look good. Based in Ethiopia, serving globally.
+          <p className="text-lg text-muted-foreground leading-relaxed mb-8">
+            Fira Tech was founded on a simple belief: technology should be reliable, useful, and built to last. We don't chase buzzwords — we engineer software that delivers measurable value.
           </p>
+          <Link to="/about" className="inline-flex items-center gap-2 text-accent font-medium hover:gap-3 transition-all">
+            Learn about our philosophy <ArrowRight className="w-4 h-4" />
+          </Link>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 gap-5">
+        <div className="grid sm:grid-cols-2 gap-4">
           {capabilities.map((cap, i) => (
             <motion.div
               key={cap.label}
               initial={{ opacity: 0, y: 16 }}
               animate={isVisible ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.4, delay: 0.15 + i * 0.06 }}
-              className="p-4 rounded-xl border border-border/30 hover:border-forest/20 transition-colors"
+              transition={{ duration: 0.4, delay: 0.1 + i * 0.05 }}
+              className="glass-card p-6"
             >
-              <h3 className="font-semibold text-foreground text-sm mb-1">{cap.label}</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">{cap.desc}</p>
+              <h3 className="font-display font-bold text-foreground mb-2">{cap.label}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{cap.desc}</p>
             </motion.div>
           ))}
         </div>
@@ -127,7 +241,7 @@ function ServicesPreview({ services }: { services: any[] }) {
   const { ref, isVisible } = useScrollReveal();
 
   return (
-    <section className="py-24 md:py-36 px-6 bg-muted/15" ref={ref}>
+    <section className="py-24 md:py-36 px-6 bg-muted/20" ref={ref}>
       <div className="container-fira">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -138,18 +252,18 @@ function ServicesPreview({ services }: { services: any[] }) {
           <div>
             <span className="text-xs font-semibold tracking-[0.2em] uppercase text-accent mb-4 block">Services</span>
             <h2 className="text-3xl md:text-5xl font-display font-bold text-foreground">
-              What we do
+              What we do best
             </h2>
           </div>
           <Link to="/services" className="flex items-center gap-2 text-accent hover:text-accent/80 transition-colors text-sm font-medium">
-            All services <ArrowRight className="w-4 h-4" />
+            View all services <ArrowRight className="w-4 h-4" />
           </Link>
         </motion.div>
 
         <div className="space-y-4">
           {services.slice(0, 5).map((service: any, i: number) => (
             <motion.div
-              key={service.id}
+              key={service.id || i}
               initial={{ opacity: 0, y: 16 }}
               animate={isVisible ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.4, delay: 0.1 + i * 0.06 }}
@@ -202,9 +316,8 @@ function SelectedWork({ projects }: { projects: any[] }) {
           </Link>
         </motion.div>
 
-        {/* Asymmetric layout: large + two smaller */}
+        {/* Asymmetric layout */}
         <div className="grid lg:grid-cols-5 gap-6">
-          {/* Large featured project */}
           {projects[0] && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -213,11 +326,6 @@ function SelectedWork({ projects }: { projects: any[] }) {
               className="lg:col-span-3"
             >
               <Link to={`/work/${projects[0].slug}`} className="glass-card overflow-hidden group block h-full">
-                {projects[0].images?.[0] && (
-                  <div className="aspect-[16/10] overflow-hidden">
-                    <img src={projects[0].images[0]} alt={projects[0].title} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700" />
-                  </div>
-                )}
                 <div className="p-6 md:p-8">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="px-3 py-1 text-xs font-medium bg-forest/20 text-forest-light rounded-full">{projects[0].category}</span>
@@ -229,21 +337,15 @@ function SelectedWork({ projects }: { projects: any[] }) {
             </motion.div>
           )}
 
-          {/* Two smaller projects */}
           <div className="lg:col-span-2 flex flex-col gap-6">
             {projects.slice(1, 3).map((project: any, i: number) => (
               <motion.div
-                key={project.id}
+                key={project.id || i}
                 initial={{ opacity: 0, y: 20 }}
                 animate={isVisible ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.5, delay: 0.2 + i * 0.1 }}
               >
                 <Link to={`/work/${project.slug}`} className="glass-card overflow-hidden group block h-full">
-                  {project.images?.[0] && (
-                    <div className="aspect-video overflow-hidden">
-                      <img src={project.images[0]} alt={project.title} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700" />
-                    </div>
-                  )}
                   <div className="p-5">
                     <span className="px-3 py-1 text-xs font-medium bg-forest/20 text-forest-light rounded-full">{project.category}</span>
                     <h3 className="text-lg font-display font-bold text-foreground mt-3 mb-1 group-hover:text-accent transition-colors">{project.title}</h3>
@@ -259,8 +361,17 @@ function SelectedWork({ projects }: { projects: any[] }) {
   );
 }
 
-function Testimonials({ testimonials, idx, setIdx }: { testimonials: any[]; idx: number; setIdx: (i: number) => void }) {
+function Testimonials({
+  testimonials,
+  idx,
+  setIdx,
+}: {
+  testimonials: any[];
+  idx: number;
+  setIdx: React.Dispatch<React.SetStateAction<number>>;
+}) {
   const { ref, isVisible } = useScrollReveal();
+  const current = testimonials[idx] || testimonials[0];
 
   return (
     <section className="py-24 md:py-36 px-6" ref={ref}>
@@ -284,22 +395,24 @@ function Testimonials({ testimonials, idx, setIdx }: { testimonials: any[]; idx:
             transition={{ duration: 0.6, delay: 0.15 }}
             className="glass-card p-8 md:p-12 text-center relative"
           >
-            {testimonials[idx]?.rating && (
+            {current?.rating && (
               <div className="flex items-center justify-center gap-1 mb-6">
-                {Array.from({ length: testimonials[idx].rating }).map((_, i) => (
+                {Array.from({ length: current.rating }).map((_, i) => (
                   <Star key={i} className="w-4 h-4 text-accent fill-accent" />
                 ))}
               </div>
             )}
 
             <blockquote className="text-lg md:text-xl text-foreground leading-relaxed mb-8 italic">
-              "{testimonials[idx]?.content}"
+              "{current?.content}"
             </blockquote>
 
             <div>
-              <p className="font-display font-bold text-foreground">{testimonials[idx]?.customer_name}</p>
+              <p className="font-display font-bold text-foreground">
+                {current?.client_name || current?.customer_name || "Partner Executive"}
+              </p>
               <p className="text-sm text-muted-foreground">
-                {[testimonials[idx]?.position, testimonials[idx]?.company].filter(Boolean).join(", ")}
+                {[current?.client_title || current?.position, current?.client_company || current?.company].filter(Boolean).join(", ")}
               </p>
             </div>
           </motion.div>
@@ -361,17 +474,12 @@ function InsightsPreview({ posts }: { posts: any[] }) {
         <div className="grid md:grid-cols-3 gap-6">
           {posts.slice(0, 3).map((post: any, i: number) => (
             <motion.div
-              key={post.id}
+              key={post.id || i}
               initial={{ opacity: 0, y: 20 }}
               animate={isVisible ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: 0.1 + i * 0.08 }}
             >
               <Link to={`/insights/${post.slug}`} className="glass-card overflow-hidden group block h-full">
-                {post.cover_image && (
-                  <div className="aspect-video overflow-hidden">
-                    <img src={post.cover_image} alt={post.title} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700" />
-                  </div>
-                )}
                 <div className="p-6">
                   {post.category && (
                     <span className="px-3 py-1 text-xs font-medium bg-forest/20 text-forest-light rounded-full">{post.category}</span>
@@ -412,7 +520,7 @@ function CareersPreview({ jobs }: { jobs: any[] }) {
         <div className="max-w-2xl mx-auto space-y-4 mb-10">
           {jobs.slice(0, 3).map((job: any, i: number) => (
             <motion.div
-              key={job.id}
+              key={job.id || i}
               initial={{ opacity: 0, y: 16 }}
               animate={isVisible ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.4, delay: 0.1 + i * 0.06 }}
@@ -434,17 +542,6 @@ function CareersPreview({ jobs }: { jobs: any[] }) {
             </motion.div>
           ))}
         </div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={isVisible ? { opacity: 1 } : {}}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="text-center"
-        >
-          <Link to="/careers" className="inline-flex items-center gap-2 text-accent hover:text-accent/80 transition-colors text-sm font-medium">
-            Explore opportunities <ArrowRight className="w-4 h-4" />
-          </Link>
-        </motion.div>
       </div>
     </section>
   );
@@ -454,38 +551,30 @@ function FinalCTA() {
   const { ref, isVisible } = useScrollReveal();
 
   return (
-    <section className="py-24 md:py-36 px-6" ref={ref}>
-      <div className="container-fira">
+    <section className="py-24 md:py-36 px-6 relative overflow-hidden" ref={ref}>
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-forest/5 to-transparent pointer-events-none" />
+
+      <div className="container-fira relative z-10 text-center max-w-3xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isVisible ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-forest via-forest-dark to-obsidian p-12 md:p-20 text-center"
         >
-          <div className="absolute inset-0 oromo-pattern opacity-5" />
-          <div className="absolute top-0 right-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-
-          <div className="relative z-10">
-            <h2 className="text-3xl md:text-5xl font-display font-bold text-foreground mb-6">
-              Have a problem worth solving?
-            </h2>
-            <p className="text-lg text-foreground/70 max-w-xl mx-auto mb-10">
-              Tell us what you're trying to build. We'll take it from there.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                to="/start-a-project"
-                className="inline-flex items-center gap-2.5 px-10 py-4 bg-gradient-to-r from-accent to-amber-500 text-obsidian font-semibold rounded-full hover:shadow-lg hover:shadow-accent/20 transition-all text-lg"
-              >
-                Start a Project <ArrowRight className="w-5 h-5" />
-              </Link>
-              <Link
-                to="/contact"
-                className="inline-flex items-center gap-2.5 px-10 py-4 border border-foreground/20 text-foreground font-medium rounded-full hover:bg-foreground/5 transition-all text-lg"
-              >
-                Let's Talk
-              </Link>
-            </div>
+          <span className="text-xs font-semibold tracking-[0.2em] uppercase text-accent mb-4 block">Let's Build</span>
+          <h2 className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-foreground mb-6">
+            Have a project in mind?
+          </h2>
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed">
+            Tell us what you're building. We'll tell you how we can help — honestly, directly, and without the agency runaround.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link to="/start-project" className="btn-gold text-center inline-flex items-center gap-2 group">
+              <span>Start a Project</span>
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+            <Link to="/contact" className="btn-outline-forest text-center">
+              <span>Contact Us</span>
+            </Link>
           </div>
         </motion.div>
       </div>

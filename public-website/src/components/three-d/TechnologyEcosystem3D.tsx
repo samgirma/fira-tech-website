@@ -7,10 +7,16 @@ interface TechnologyEcosystem3DProps {
 export function TechnologyEcosystem3D({ className = "" }: TechnologyEcosystem3DProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   useEffect(() => {
-    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) return;
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReducedMotion(mediaQuery.matches);
+
+    const mediaHandler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mediaQuery.addEventListener("change", mediaHandler);
+
+    if (mediaQuery.matches) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!containerRef.current) return;
@@ -21,7 +27,10 @@ export function TechnologyEcosystem3D({ className = "" }: TechnologyEcosystem3DP
     };
 
     window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    return () => window.removeEventListener("mousemove", handleMouseMove);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      mediaQuery.removeEventListener("change", mediaHandler);
+    };
   }, []);
 
   const nodes = [
@@ -55,70 +64,90 @@ export function TechnologyEcosystem3D({ className = "" }: TechnologyEcosystem3DP
       <div
         className="w-full h-full relative"
         style={{
-          transform: `rotateY(${mousePos.x * 3}deg) rotateX(${-mousePos.y * 3}deg)`,
-          transition: "transform 0.4s ease-out",
+          transform: prefersReducedMotion
+            ? "none"
+            : `rotateY(${mousePos.x * 3}deg) rotateX(${-mousePos.y * 3}deg)`,
+          transition: prefersReducedMotion ? "none" : "transform 0.4s ease-out",
           transformStyle: "preserve-3d",
         }}
       >
-        <svg viewBox="0 0 100 100" className="w-full h-full" style={{ filter: "drop-shadow(0 0 20px hsl(152 45% 28% / 0.2))" }}>
-          {/* Connections */}
-          {connections.map(([a, b], i) => (
+        <svg
+          viewBox="0 0 100 100"
+          className="w-full h-full"
+          style={{ filter: "drop-shadow(0 0 20px hsl(152 45% 28% / 0.15))" }}
+        >
+          {/* Outer ring */}
+          <circle
+            cx="50"
+            cy="50"
+            r="42"
+            fill="none"
+            stroke="hsl(152 45% 28%)"
+            strokeWidth="0.3"
+            strokeDasharray="2 3"
+            opacity="0.2"
+          />
+          <circle
+            cx="50"
+            cy="50"
+            r="46"
+            fill="none"
+            stroke="hsl(43 85% 55%)"
+            strokeWidth="0.15"
+            opacity="0.15"
+          />
+
+          {/* Connection lines */}
+          {connections.map(([from, to], i) => (
             <line
               key={i}
-              x1={nodes[a].x}
-              y1={nodes[a].y}
-              x2={nodes[b].x}
-              y2={nodes[b].y}
-              stroke="hsl(43 85% 55% / 0.15)"
-              strokeWidth="0.3"
-              strokeDasharray="2 3"
+              x1={nodes[from].x}
+              y1={nodes[from].y}
+              x2={nodes[to].x}
+              y2={nodes[to].y}
+              stroke="hsl(152 40% 35%)"
+              strokeWidth="0.4"
+              opacity="0.25"
+              strokeDasharray={i % 3 === 0 ? "1 1.5" : "none"}
             />
           ))}
 
           {/* Nodes */}
           {nodes.map((node, i) => (
             <g key={i}>
-              {/* Glow */}
               <circle
                 cx={node.x}
                 cy={node.y}
-                r="4"
+                r="1.8"
                 fill={node.color}
-                opacity="0.08"
+                opacity="0.9"
               />
-              {/* Core */}
-              <circle
-                cx={node.x}
-                cy={node.y}
-                r="1.5"
-                fill={node.color}
-                opacity="0.6"
-              />
-              {/* Pulse ring */}
-              <circle
-                cx={node.x}
-                cy={node.y}
-                r="2.5"
-                fill="none"
-                stroke={node.color}
-                strokeWidth="0.2"
-                opacity="0.3"
-              >
-                <animate
-                  attributeName="r"
-                  from="2"
-                  to="4"
-                  dur={`${3 + i * 0.4}s`}
-                  repeatCount="indefinite"
-                />
-                <animate
-                  attributeName="opacity"
-                  from="0.3"
-                  to="0"
-                  dur={`${3 + i * 0.4}s`}
-                  repeatCount="indefinite"
-                />
-              </circle>
+              {!prefersReducedMotion && (
+                <circle
+                  cx={node.x}
+                  cy={node.y}
+                  r="2.5"
+                  fill="none"
+                  stroke={node.color}
+                  strokeWidth="0.2"
+                  opacity="0.3"
+                >
+                  <animate
+                    attributeName="r"
+                    from="2"
+                    to="4"
+                    dur={`${3 + i * 0.4}s`}
+                    repeatCount="indefinite"
+                  />
+                  <animate
+                    attributeName="opacity"
+                    from="0.3"
+                    to="0"
+                    dur={`${3 + i * 0.4}s`}
+                    repeatCount="indefinite"
+                  />
+                </circle>
+              )}
               {/* Label */}
               <text
                 x={node.x}
@@ -136,7 +165,9 @@ export function TechnologyEcosystem3D({ className = "" }: TechnologyEcosystem3DP
 
           {/* Central glow */}
           <circle cx="50" cy="50" r="15" fill="hsl(152 45% 28%)" opacity="0.04">
-            <animate attributeName="r" values="12;18;12" dur="6s" repeatCount="indefinite" />
+            {!prefersReducedMotion && (
+              <animate attributeName="r" values="12;18;12" dur="6s" repeatCount="indefinite" />
+            )}
           </circle>
         </svg>
       </div>

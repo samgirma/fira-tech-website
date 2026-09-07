@@ -25,6 +25,7 @@ export function Navbar() {
   }, [location]);
 
   const links = [
+    { label: "Home", url: "/" },
     { label: "Work", url: "/work" },
     { label: "Services", url: "/services" },
     { label: "Insights", url: "/insights" },

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../../services/api'
-import { formatDate, cn } from '../../lib/utils'
+import { formatDate, getRelativeTime, cn } from '../../lib/utils'
 import {
   Plus,
   Search,
@@ -10,56 +10,135 @@ import {
   FileText,
   Eye,
   EyeOff,
+  MessageSquare,
+  CheckCircle2,
+  XCircle,
+  Edit2,
 } from 'lucide-react'
 
 interface Blog {
   id: string
   title: string
+  slug?: string
   content: string
+  excerpt?: string
   category?: string
   author?: string
   published: boolean
   createdAt: string
+  created_at?: string
+}
+
+interface Comment {
+  id: string
+  post_id: string
+  post_title?: string
+  author_name: string
+  author_email?: string
+  content: string
+  is_approved: boolean
+  approved?: boolean
+  created_at: string
 }
 
 export default function BlogPage() {
+  const [activeTab, setActiveTab] = useState<'posts' | 'comments'>('posts')
   const [blogs, setBlogs] = useState<Blog[]>([])
+  const [comments, setComments] = useState<Comment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [editingBlog, setEditingBlog] = useState<Blog | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
 
   useEffect(() => {
-    loadBlogs()
+    loadData()
   }, [])
 
-  const loadBlogs = async () => {
+  const loadData = async () => {
     try {
       setIsLoading(true)
-      const data = await api.getBlogs()
-      setBlogs(data)
+      const [blogsRes, commentsRes] = await Promise.allSettled([
+        api.getBlogs(),
+        api.getComments(),
+      ])
+      if (blogsRes.status === 'fulfilled') setBlogs(blogsRes.value || [])
+      if (commentsRes.status === 'fulfilled') setComments(commentsRes.value || [])
     } catch (error) {
-      console.error('Failed to load blogs:', error)
+      console.error('Failed to load blog data:', error)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteBlog = async (id: string) => {
     if (!confirm('Delete this blog post?')) return
     setDeletingId(id)
     try {
       await api.deleteBlog(id)
-      await loadBlogs()
+      await loadData()
     } finally {
       setDeletingId(null)
     }
   }
 
-  const handleCreate = async (data: { title: string; content: string; category?: string; published: boolean }) => {
-    await api.createBlog(data)
-    await loadBlogs()
-    setShowCreateForm(false)
+  const handleSaveBlog = async (data: any) => {
+    try {
+      if (editingBlog) {
+        await api.updateBlog(editingBlog.id, data)
+      } else {
+        await api.createBlog(data)
+      }
+      await loadData()
+      setShowCreateForm(false)
+      setEditingBlog(null)
+    } catch (err) {
+      console.error('Failed to save blog:', err)
+      alert('Failed to save blog post.')
+    }
+  }
+
+  const handleTogglePublish = async (blog: Blog) => {
+    try {
+      await api.updateBlog(blog.id, { published: !blog.published })
+      setBlogs((prev) =>
+        prev.map((b) => (b.id === blog.id ? { ...b, published: !b.published } : b))
+      )
+    } catch (err) {
+      console.error('Failed to update published state:', err)
+    }
+  }
+
+  const handleApproveComment = async (commentId: string, approve: boolean) => {
+    try {
+      setActionLoadingId(commentId)
+      await api.updateComment(commentId, approve)
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === commentId ? { ...c, is_approved: approve, approved: approve } : c
+        )
+      )
+    } catch (err) {
+      console.error('Failed to update comment:', err)
+      alert('Failed to update comment status.')
+    } finally {
+      setActionLoadingId(null)
+    }
+  }
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('Delete this comment?')) return
+    try {
+      setActionLoadingId(commentId)
+      await api.deleteComment(commentId)
+      setComments((prev) => prev.filter((c) => c.id !== commentId))
+    } catch (err) {
+      console.error('Failed to delete comment:', err)
+      alert('Failed to delete comment.')
+    } finally {
+      setActionLoadingId(null)
+    }
   }
 
   const filteredBlogs = blogs.filter(
@@ -68,243 +147,401 @@ export default function BlogPage() {
       blog.category?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
+  const pendingCommentsCount = comments.filter((c) => !(c.is_approved ?? c.approved)).length
+
   return (
-    <div className="page-container">
+    <div className="page-container space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="page-title">Blog</h1>
-          <p className="page-subtitle">Create and manage your blog posts</p>
+          <h1 className="page-title">Blog & Thought Leadership</h1>
+          <p className="page-subtitle">Publish architectural insights, sovereign tech essays, and moderate discussions</p>
         </div>
+
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
-            <input
-              type="text"
-              placeholder="Search posts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="input pl-9 w-64"
-            />
-          </div>
-          <button className="btn-primary" onClick={() => setShowCreateForm(true)}>
-            <Plus size={16} />
-            New Post
-          </button>
+          {activeTab === 'posts' && (
+            <button
+              className="btn-primary text-xs h-9 px-3"
+              onClick={() => {
+                setEditingBlog(null)
+                setShowCreateForm(true)
+              }}
+            >
+              <Plus size={15} />
+              <span>New Post</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className="card">
-          <div className="card-content flex items-center justify-center py-16">
-            <Loader2 size={24} className="animate-spin text-brand-500" />
-          </div>
-        </div>
-      )}
+      {/* Tabs */}
+      <div className="flex border-b border-surface-200 dark:border-surface-800 gap-6 text-xs font-semibold">
+        <button
+          onClick={() => setActiveTab('posts')}
+          className={cn(
+            'pb-3 border-b-2 transition-colors flex items-center gap-2',
+            activeTab === 'posts'
+              ? 'border-brand-600 text-brand-600 dark:text-brand-400'
+              : 'border-transparent text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'
+          )}
+        >
+          <FileText size={15} />
+          <span>Articles ({blogs.length})</span>
+        </button>
 
-      {/* Table */}
-      {!isLoading && filteredBlogs.length > 0 && (
-        <div className="card">
-          <div className="overflow-x-auto">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Category</th>
-                  <th>Author</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredBlogs.map((blog) => (
-                  <tr key={blog.id}>
-                    <td>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center flex-shrink-0">
-                          <FileText size={14} className="text-brand-600" />
-                        </div>
-                        <p className="font-medium text-surface-900">{blog.title}</p>
-                      </div>
-                    </td>
-                    <td>
-                      {blog.category ? (
-                        <span className="badge bg-surface-100 text-surface-700">{blog.category}</span>
-                      ) : (
-                        <span className="text-surface-400">-</span>
-                      )}
-                    </td>
-                    <td className="text-surface-600">{blog.author || '-'}</td>
-                    <td>
-                      <span
-                        className={cn(
-                          'badge',
-                          blog.published
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-yellow-100 text-yellow-700'
-                        )}
-                      >
-                        {blog.published ? (
-                          <Eye size={12} className="mr-1" />
-                        ) : (
-                          <EyeOff size={12} className="mr-1" />
-                        )}
-                        {blog.published ? 'Published' : 'Draft'}
-                      </span>
-                    </td>
-                    <td className="text-surface-500 text-sm">{formatDate(blog.createdAt)}</td>
-                    <td>
+        <button
+          onClick={() => setActiveTab('comments')}
+          className={cn(
+            'pb-3 border-b-2 transition-colors flex items-center gap-2',
+            activeTab === 'comments'
+              ? 'border-brand-600 text-brand-600 dark:text-brand-400'
+              : 'border-transparent text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'
+          )}
+        >
+          <MessageSquare size={15} />
+          <span>Comments Approval</span>
+          {pendingCommentsCount > 0 && (
+            <span className="text-3xs px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-bold">
+              {pendingCommentsCount} pending
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Filter Bar */}
+      <div className="card p-3">
+        <div className="relative max-w-md">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
+          <input
+            type="text"
+            placeholder={activeTab === 'posts' ? 'Search posts...' : 'Search comments...'}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="input pl-9 w-full text-xs h-9"
+          />
+        </div>
+      </div>
+
+      {/* Content */}
+      {isLoading ? (
+        <div className="py-20 flex justify-center">
+          <Loader2 size={32} className="animate-spin text-brand-600" />
+        </div>
+      ) : activeTab === 'posts' ? (
+        filteredBlogs.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredBlogs.map((blog) => (
+              <div
+                key={blog.id}
+                className="card flex flex-col justify-between overflow-hidden group hover:border-brand-300 dark:hover:border-brand-700 transition-all"
+              >
+                <div className="p-5 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-3xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300">
+                      {blog.category || 'Architecture'}
+                    </span>
+                    <div className="flex items-center gap-1">
                       <button
-                        onClick={() => handleDelete(blog.id)}
+                        onClick={() => {
+                          setEditingBlog(blog)
+                          setShowCreateForm(true)
+                        }}
+                        className="p-1.5 rounded hover:bg-surface-100 dark:hover:bg-surface-800 text-surface-400 hover:text-surface-700"
+                      >
+                        <Edit2 size={13} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteBlog(blog.id)}
                         disabled={deletingId === blog.id}
-                        className="p-1 hover:bg-red-50 rounded"
+                        className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-950/50 text-surface-400 hover:text-red-600"
                       >
                         {deletingId === blog.id ? (
-                          <Loader2 size={14} className="text-red-400 animate-spin" />
+                          <Loader2 size={13} className="animate-spin text-red-500" />
                         ) : (
-                          <Trash2 size={14} className="text-surface-400" />
+                          <Trash2 size={13} />
                         )}
                       </button>
+                    </div>
+                  </div>
+
+                  <h3 className="font-bold text-base text-surface-900 dark:text-surface-100 line-clamp-2">
+                    {blog.title}
+                  </h3>
+
+                  <p className="text-xs text-surface-600 dark:text-surface-300 line-clamp-3 leading-relaxed">
+                    {blog.excerpt || blog.content}
+                  </p>
+                </div>
+
+                <div className="p-3.5 bg-surface-50/50 dark:bg-surface-800/40 border-t border-surface-100 dark:border-surface-800 flex items-center justify-between text-2xs text-surface-400">
+                  <button
+                    onClick={() => handleTogglePublish(blog)}
+                    className="flex items-center gap-1 font-semibold hover:opacity-80"
+                  >
+                    {blog.published ? (
+                      <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                        <Eye size={12} /> Published
+                      </span>
+                    ) : (
+                      <span className="text-surface-400 flex items-center gap-1">
+                        <EyeOff size={12} /> Draft
+                      </span>
+                    )}
+                  </button>
+                  <span>{formatDate(blog.createdAt || blog.created_at || new Date().toISOString())}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="card py-16 text-center">
+            <FileText size={28} className="mx-auto text-surface-400 mb-2" />
+            <p className="text-xs text-surface-400">No blog posts found.</p>
+          </div>
+        )
+      ) : (
+        /* Comments Approval Tab */
+        <div className="card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-800/40 text-surface-500 uppercase tracking-wider font-semibold">
+                  <th className="py-3 px-4">Commenter</th>
+                  <th className="py-3 px-4">Content</th>
+                  <th className="py-3 px-4">Article</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Date</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
+                {comments.map((comment) => {
+                  const isApproved = comment.is_approved ?? comment.approved
+                  const isActing = actionLoadingId === comment.id
+
+                  return (
+                    <tr key={comment.id} className="hover:bg-surface-50/80 dark:hover:bg-surface-800/50">
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-surface-900 dark:text-surface-100">
+                          {comment.author_name}
+                        </div>
+                        {comment.author_email && (
+                          <div className="text-3xs text-surface-400">{comment.author_email}</div>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-4 max-w-sm">
+                        <p className="text-surface-700 dark:text-surface-300 line-clamp-2">
+                          {comment.content}
+                        </p>
+                      </td>
+
+                      <td className="py-3 px-4 text-surface-600 dark:text-surface-400">
+                        {comment.post_title || 'Blog Essay'}
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <span className={cn(
+                          'text-2xs px-2 py-0.5 rounded-full font-bold uppercase',
+                          isApproved
+                            ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+                            : 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'
+                        )}>
+                          {isApproved ? 'Approved' : 'Pending Review'}
+                        </span>
+                      </td>
+
+                      <td className="py-3 px-4 text-surface-400">
+                        {getRelativeTime(comment.created_at)}
+                      </td>
+
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {!isApproved ? (
+                            <button
+                              onClick={() => handleApproveComment(comment.id, true)}
+                              disabled={isActing}
+                              className="btn-primary text-2xs h-7 px-2.5 bg-emerald-600 hover:bg-emerald-700 inline-flex items-center gap-1"
+                            >
+                              <CheckCircle2 size={12} />
+                              Approve
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleApproveComment(comment.id, false)}
+                              disabled={isActing}
+                              className="btn-outline text-2xs h-7 px-2.5 inline-flex items-center gap-1 text-amber-600 hover:text-amber-700"
+                            >
+                              <XCircle size={12} />
+                              Unapprove
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => handleDeleteComment(comment.id)}
+                            disabled={isActing}
+                            className="p-1 hover:bg-red-50 dark:hover:bg-red-950/50 rounded text-surface-400 hover:text-red-600"
+                            title="Delete comment"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+
+                {comments.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="text-center py-12 text-surface-400">
+                      No comments submitted on public blog posts yet.
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      {/* Empty State */}
-      {!isLoading && blogs.length === 0 && (
-        <div className="card">
-          <div className="card-content flex flex-col items-center justify-center py-16">
-            <div className="w-16 h-16 rounded-2xl bg-brand-50 flex items-center justify-center mb-4">
-              <FileText size={24} className="text-brand-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-surface-900">No blog posts yet</h3>
-            <p className="text-surface-500 mt-2 text-center max-w-md">
-              Start sharing your thoughts and expertise. Create your first blog post.
-            </p>
-            <button className="btn-primary mt-4" onClick={() => setShowCreateForm(true)}>
-              <Plus size={16} />
-              Create Post
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Create Form Modal */}
+      {/* Blog Post Form Modal */}
       {showCreateForm && (
-        <BlogForm onSubmit={handleCreate} onClose={() => setShowCreateForm(false)} />
+        <BlogModal
+          blog={editingBlog || undefined}
+          onSave={handleSaveBlog}
+          onClose={() => {
+            setShowCreateForm(false)
+            setEditingBlog(null)
+          }}
+        />
       )}
     </div>
   )
 }
 
-function BlogForm({
-  onSubmit,
+function BlogModal({
+  blog,
+  onSave,
   onClose,
 }: {
-  onSubmit: (data: { title: string; content: string; category?: string; published: boolean }) => Promise<void>
+  blog?: Blog
+  onSave: (data: any) => Promise<void>
   onClose: () => void
 }) {
-  const [form, setForm] = useState({
-    title: '',
-    content: '',
-    category: '',
-    published: false,
-  })
-  const [saving, setSaving] = useState(false)
+  const [title, setTitle] = useState(blog?.title || '')
+  const [category, setCategory] = useState(blog?.category || 'Architecture')
+  const [excerpt, setExcerpt] = useState(blog?.excerpt || '')
+  const [content, setContent] = useState(blog?.content || '')
+  const [published, setPublished] = useState(blog?.published ?? true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSaving(true)
+    if (!title.trim() || !content.trim()) return
+
     try {
-      await onSubmit({
-        title: form.title,
-        content: form.content,
-        category: form.category || undefined,
-        published: form.published,
+      setIsSubmitting(true)
+      await onSave({
+        title,
+        category,
+        excerpt: excerpt || undefined,
+        content,
+        published,
       })
     } finally {
-      setSaving(false)
+      setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between p-6 border-b border-surface-200">
-          <h2 className="text-lg font-semibold text-surface-900">New Blog Post</h2>
-          <button onClick={onClose} className="p-1 hover:bg-surface-100 rounded">
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-surface-900 rounded-xl border border-surface-200 dark:border-surface-800 w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl p-6 space-y-4">
+        <div className="flex items-center justify-between border-b border-surface-100 dark:border-surface-800 pb-3">
+          <h3 className="font-bold text-base text-surface-900 dark:text-surface-100">
+            {blog ? 'Edit Article' : 'Draft New Thought Leadership Essay'}
+          </h3>
+          <button onClick={onClose} className="p-1 text-surface-400 hover:text-surface-600">
             <X size={18} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+
+        <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
           <div>
-            <label className="block text-sm font-medium text-surface-700 mb-1">Title *</label>
+            <label className="block text-surface-600 dark:text-surface-400 font-medium mb-1">
+              Article Title *
+            </label>
             <input
               type="text"
               required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. The Myth of Microservices: Why Modular Monoliths Scale Faster"
               className="input w-full"
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="Enter post title"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-surface-700 mb-1">Category</label>
-            <input
-              type="text"
-              className="input w-full"
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-              placeholder="e.g. Technology, Business"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-surface-700 mb-1">Content *</label>
-            <textarea
-              required
-              rows={8}
-              className="input w-full resize-none"
-              value={form.content}
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
-              placeholder="Write your post content..."
-            />
-          </div>
-          <div className="flex items-center justify-between py-3 px-4 bg-surface-50 rounded-lg">
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <p className="text-sm font-medium text-surface-700">Publish immediately</p>
-              <p className="text-xs text-surface-500">Toggle off to save as draft</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setForm({ ...form, published: !form.published })}
-              className={cn(
-                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                form.published ? 'bg-brand-600' : 'bg-surface-300'
-              )}
-            >
-              <span
-                className={cn(
-                  'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
-                  form.published ? 'translate-x-6' : 'translate-x-1'
-                )}
+              <label className="block text-surface-600 dark:text-surface-400 font-medium mb-1">
+                Category
+              </label>
+              <input
+                type="text"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="Architecture, DevOps, AI"
+                className="input w-full"
               />
-            </button>
+            </div>
+            <div>
+              <label className="block text-surface-600 dark:text-surface-400 font-medium mb-1">
+                Status
+              </label>
+              <select
+                value={published ? 'published' : 'draft'}
+                onChange={(e) => setPublished(e.target.value === 'published')}
+                className="input w-full"
+              >
+                <option value="published">Published</option>
+                <option value="draft">Draft</option>
+              </select>
+            </div>
           </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-surface-200">
-            <button type="button" onClick={onClose} className="btn-ghost">
+
+          <div>
+            <label className="block text-surface-600 dark:text-surface-400 font-medium mb-1">
+              Short Excerpt / Deck
+            </label>
+            <input
+              type="text"
+              value={excerpt}
+              onChange={(e) => setExcerpt(e.target.value)}
+              placeholder="A one-sentence summary for card previews and SEO meta"
+              className="input w-full"
+            />
+          </div>
+
+          <div>
+            <label className="block text-surface-600 dark:text-surface-400 font-medium mb-1">
+              Article Body (Markdown supported) *
+            </label>
+            <textarea
+              rows={10}
+              required
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Write your article content..."
+              className="input w-full font-mono text-2xs resize-none"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-surface-100 dark:border-surface-800">
+            <button type="button" onClick={onClose} className="btn-outline text-xs h-9 px-4">
               Cancel
             </button>
-            <button type="submit" disabled={saving} className="btn-primary">
-              {saving ? <Loader2 size={16} className="animate-spin" /> : 'Create Post'}
+            <button type="submit" disabled={isSubmitting} className="btn-primary text-xs h-9 px-4">
+              {isSubmitting && <Loader2 size={14} className="animate-spin mr-1.5" />}
+              {blog ? 'Update Article' : 'Publish Article'}
             </button>
           </div>
         </form>

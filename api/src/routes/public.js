@@ -236,11 +236,34 @@ router.post('/project-requests', async (req, res, next) => {
     }
     const message = `[Project Request] ${projectType || 'General'}: ${description}${timeline ? ` | Timeline: ${timeline}` : ''}${budget ? ` | Budget: ${budget}` : ''}${company ? ` | Company: ${company}` : ''}${additionalInfo ? ` | ${additionalInfo}` : ''}`
 
+    // Parse estimated value from budget string if possible
+    let estimatedValue = null
+    if (budget) {
+      const cleanBudget = budget.replace(/,/g, '')
+      const digits = cleanBudget.replace(/[^0-9.]/g, ' ').trim().split(/\s+/).filter(Boolean)
+      if (digits.length > 0) {
+        estimatedValue = parseFloat(digits[0])
+      }
+    }
+
+    // 1. Insert into clients as 'new' stage
+    const clientResult = await db.query(
+      `INSERT INTO clients (name, company, email, phone, source, service_interested, estimated_value, stage, notes)
+       VALUES ($1, $2, $3, $4, 'website_request', $5, $6, 'new', $7)
+       RETURNING *`,
+      [name, company || null, email, phone || null, projectType || 'General', estimatedValue, message]
+    )
+
+    // 2. Also log to contact_messages for reference
     await db.query(
       `INSERT INTO contact_messages (name, email, subject, message) VALUES ($1, $2, $3, $4)`,
       [name, email, `Project Request: ${projectType || 'General'}`, message]
     )
-    res.status(201).json({ message: 'Your project request has been received. We will review the details and get back to you.' })
+
+    res.status(201).json({
+      message: 'Your project request has been received. We will review the details and get back to you.',
+      client: clientResult.rows[0],
+    })
   } catch (error) {
     next(error)
   }

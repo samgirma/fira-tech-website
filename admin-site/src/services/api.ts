@@ -32,7 +32,7 @@ class ApiClient {
     return response.json()
   }
 
-  // Auth
+  // --- Auth ---
   async login(email: string, password: string) {
     return this.request<{ user: any; message: string }>('/api/auth/login', {
       method: 'POST',
@@ -44,251 +44,70 @@ class ApiClient {
     return this.request<{ user: any }>('/api/auth/me')
   }
 
+  async refreshSession() {
+    return this.request<{ user: any; message: string }>('/api/auth/refresh', {
+      method: 'POST',
+    })
+  }
+
   async logout() {
     return this.request<{ message: string }>('/api/auth/logout', {
       method: 'POST',
     })
   }
 
-  // Blogs
-  async getBlogs() {
-    return this.request<any[]>('/api/admin/blogs')
+  // --- Clients (Pipeline + Directory) ---
+  async getClients(params?: { stage?: string; search?: string }) {
+    const query = new URLSearchParams()
+    if (params?.stage && params.stage !== 'all') query.set('stage', params.stage)
+    if (params?.search) query.set('search', params.search)
+    const qs = query.toString()
+    return this.request<any[]>(`/api/clients${qs ? '?' + qs : ''}`)
   }
 
-  async createBlog(data: { title: string; content: string; published?: boolean }) {
-    return this.request<any>('/api/admin/blogs', {
+  async getPipeline() {
+    return this.request<{
+      stages: Record<string, any[]>
+      stats: { stage: string; count: number; totalValue: number }[]
+      totalCount: number
+    }>('/api/clients/pipeline')
+  }
+
+  async getClient(id: string) {
+    return this.request<any>(`/api/clients/${id}`)
+  }
+
+  async createClient(data: any) {
+    return this.request<any>('/api/clients', {
       method: 'POST',
       body: JSON.stringify(data),
     })
   }
 
-  async deleteBlog(id: string) {
-    return this.request<any>(`/api/admin/blogs?id=${id}`, {
-      method: 'DELETE',
-    })
-  }
-
-  // Comments
-  async getComments(pending?: boolean) {
-    const query = pending ? '?pending=true' : ''
-    return this.request<any[]>(`/api/admin/comments${query}`)
-  }
-
-  async updateComment(id: string, approved: boolean) {
-    return this.request<any>('/api/admin/comments', {
+  async updateClient(id: string, data: any) {
+    return this.request<any>(`/api/clients/${id}`, {
       method: 'PUT',
-      body: JSON.stringify({ id, approved }),
-    })
-  }
-
-  async deleteComment(id: string) {
-    return this.request<any>(`/api/admin/comments?id=${id}`, {
-      method: 'DELETE',
-    })
-  }
-
-  // Jobs
-  async getJobs() {
-    return this.request<any[]>('/api/admin/jobs')
-  }
-
-  async createJob(data: any) {
-    return this.request<any>('/api/admin/jobs', {
-      method: 'POST',
       body: JSON.stringify(data),
     })
   }
 
-  async updateJob(id: string, data: any) {
-    return this.request<any>('/api/admin/jobs', {
-      method: 'PUT',
-      body: JSON.stringify({ id, ...data }),
-    })
-  }
-
-  async deleteJob(id: string) {
-    return this.request<any>(`/api/admin/jobs?id=${id}`, {
+  async deleteClient(id: string) {
+    return this.request<any>(`/api/clients/${id}`, {
       method: 'DELETE',
     })
   }
 
-  async toggleJob(id: string) {
-    return this.request<any>('/api/admin/jobs', {
-      method: 'PATCH',
-      body: JSON.stringify({ id }),
-    })
+  // Backward compatibility alias
+  async getLeads() {
+    return this.getClients()
   }
-
-  // Social Links
-  async getSocialLinks() {
-    return this.request<any[]>('/api/admin/social-links')
-  }
-
-  async createSocialLink(data: any) {
-    return this.request<any>('/api/admin/social-links', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
-  }
-
-  async updateSocialLink(id: string, data: any) {
-    return this.request<any>('/api/admin/social-links', {
-      method: 'PUT',
-      body: JSON.stringify({ id, ...data }),
-    })
-  }
-
-  async deleteSocialLink(id: string) {
-    return this.request<any>(`/api/admin/social-links?id=${id}`, {
-      method: 'DELETE',
-    })
-  }
-
-  // Settings
-  async getSettings() {
-    return this.request<Record<string, string>>('/api/admin/settings')
-  }
-
-  async updateSetting(key: string, value: string) {
-    return this.request<any>('/api/admin/settings', {
-      method: 'PUT',
-      body: JSON.stringify({ key, value }),
-    })
-  }
-
-  // Contact Messages
-  async getContactMessages() {
-    return this.request<any[]>('/api/admin/contact')
-  }
-
-  async markContactRead(id: string, isRead: boolean) {
-    return this.request<any>('/api/admin/contact', {
-      method: 'PUT',
-      body: JSON.stringify({ id, is_read: isRead }),
-    })
-  }
-
-  async deleteContactMessage(id: string) {
-    return this.request<any>(`/api/admin/contact?id=${id}`, {
-      method: 'DELETE',
-    })
-  }
-
-  // Site Stats
-  async getSiteStats() {
-    return this.request<any[]>('/api/admin/site-stats')
-  }
-
-  async updateSiteStats(stats: any[]) {
-    return this.request<any>('/api/admin/site-stats', {
-      method: 'PUT',
-      body: JSON.stringify(stats),
-    })
-  }
-
-  // Satisfaction
-  async getSatisfactionResponses() {
-    return this.request<any[]>('/api/admin/satisfaction')
-  }
-
-  async deleteSatisfactionResponse(id: string) {
-    return this.request<any>('/api/admin/satisfaction', {
-      method: 'DELETE',
-      body: JSON.stringify({ id }),
-    })
-  }
-
-  async generateSatisfactionLink() {
-    return this.request<any>('/api/admin/satisfaction/generate-link', {
-      method: 'POST',
-    })
-  }
-
-  async getSatisfactionLinks() {
-    return this.request<any[]>('/api/admin/satisfaction/links')
-  }
-
-  // Upload
-  async uploadImage(imageBase64: string) {
-    return this.request<{ url: string; public_id: string }>('/api/upload', {
-      method: 'POST',
-      body: JSON.stringify({ image: imageBase64 }),
-    })
-  }
-
-  // Customers
   async getCustomers() {
-    return this.request<any[]>('/api/customers')
+    return this.getClients()
   }
 
-  async getCustomer(id: string) {
-    return this.request<any>(`/api/customers/${id}`)
-  }
-
-  async createCustomer(data: { name: string; email?: string; phone?: string; company?: string; industry?: string; notes?: string }) {
-    return this.request<any>('/api/customers', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
-  }
-
-  async updateCustomer(id: string, data: any) {
-    return this.request<any>(`/api/customers/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    })
-  }
-
-  async deleteCustomer(id: string) {
-    return this.request<any>(`/api/customers/${id}`, {
-      method: 'DELETE',
-    })
-  }
-
-  // Leads
-  async getLeads(params?: { status?: string; search?: string }) {
-    const query = new URLSearchParams()
-    if (params?.status) query.set('status', params.status)
-    if (params?.search) query.set('search', params.search)
-    const qs = query.toString()
-    return this.request<any[]>(`/api/leads${qs ? '?' + qs : ''}`)
-  }
-
-  async getLeadStats() {
-    return this.request<any[]>('/api/leads/stats')
-  }
-
-  async getLead(id: string) {
-    return this.request<any>(`/api/leads/${id}`)
-  }
-
-  async createLead(data: any) {
-    return this.request<any>('/api/leads', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
-  }
-
-  async updateLead(id: string, data: any) {
-    return this.request<any>(`/api/leads/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    })
-  }
-
-  async deleteLead(id: string) {
-    return this.request<any>(`/api/leads/${id}`, {
-      method: 'DELETE',
-    })
-  }
-
-  // Projects
-  async getProjects(params?: { status?: string; search?: string }) {
-    const query = new URLSearchParams()
-    if (params?.status) query.set('status', params.status)
-    if (params?.search) query.set('search', params.search)
-    const qs = query.toString()
-    return this.request<any[]>(`/api/projects${qs ? '?' + qs : ''}`)
+  // --- Projects ---
+  async getProjects() {
+    return this.request<any[]>('/api/projects')
   }
 
   async getProjectStats() {
@@ -319,75 +138,275 @@ class ApiClient {
     })
   }
 
-  // Tasks
-  async getTasks(params?: { status?: string; projectId?: string }) {
-    const query = new URLSearchParams()
-    if (params?.status) query.set('status', params.status)
-    if (params?.projectId) query.set('projectId', params.projectId)
-    const qs = query.toString()
-    return this.request<any[]>(`/api/tasks${qs ? '?' + qs : ''}`)
-  }
-
-  async getTodayTasks() {
-    return this.request<any[]>('/api/tasks/today')
-  }
-
-  async getTask(id: string) {
-    return this.request<any>(`/api/tasks/${id}`)
-  }
-
-  async createTask(data: { title: string; projectId?: string; status?: string; priority?: string; dueDate?: string }) {
-    return this.request<any>('/api/tasks', {
+  async createProjectTask(projectId: string, data: { title: string; priority?: string; dueDate?: string; notes?: string }) {
+    return this.request<any>(`/api/projects/${projectId}/tasks`, {
       method: 'POST',
       body: JSON.stringify(data),
     })
   }
 
-  async updateTask(id: string, data: any) {
-    return this.request<any>(`/api/tasks/${id}`, {
+  async updateProjectTask(projectId: string, taskId: string, data: any) {
+    return this.request<any>(`/api/projects/${projectId}/tasks/${taskId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     })
   }
 
-  async patchTaskStatus(id: string, status: string) {
-    return this.request<any>(`/api/tasks/${id}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    })
-  }
-
-  async deleteTask(id: string) {
-    return this.request<any>(`/api/tasks/${id}`, {
+  async deleteProjectTask(projectId: string, taskId: string) {
+    return this.request<any>(`/api/projects/${projectId}/tasks/${taskId}`, {
       method: 'DELETE',
     })
   }
 
-  // Finance
+  async linkProjectRepo(projectId: string, repositoryId: string, isPrimary = true) {
+    return this.request<any>(`/api/projects/${projectId}/github`, {
+      method: 'POST',
+      body: JSON.stringify({ repositoryId, isPrimary }),
+    })
+  }
+
+  async unlinkProjectRepo(projectId: string, repoId: string) {
+    return this.request<any>(`/api/projects/${projectId}/github/${repoId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // --- Website: Portfolio / Case Studies ---
+  async getPortfolio() {
+    return this.request<any[]>('/api/portfolio')
+  }
+
+  async getPortfolioProject(id: string) {
+    return this.request<any>(`/api/portfolio/${id}`)
+  }
+
+  async createPortfolioProject(data: any) {
+    return this.request<any>('/api/portfolio', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updatePortfolioProject(id: string, data: any) {
+    return this.request<any>(`/api/portfolio/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deletePortfolioProject(id: string) {
+    return this.request<any>(`/api/portfolio/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // --- Website: Services ---
+  async getServices(all = true) {
+    return this.request<any[]>(`/api/services${all ? '?all=true' : ''}`)
+  }
+
+  async createService(data: any) {
+    return this.request<any>('/api/services', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateService(id: string, data: any) {
+    return this.request<any>(`/api/services/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteService(id: string) {
+    return this.request<any>(`/api/services/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // --- Website: Blog & Comments ---
+  async getBlogs() {
+    return this.request<any[]>('/api/blogs')
+  }
+
+  async createBlog(data: { title: string; content: string; excerpt?: string; category?: string; tags?: string[]; published?: boolean }) {
+    return this.request<any>('/api/blogs', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateBlog(id: string, data: any) {
+    return this.request<any>(`/api/blogs/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteBlog(id: string) {
+    return this.request<any>(`/api/blogs/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async getComments(pending?: boolean) {
+    const query = pending ? '?pending=true' : ''
+    return this.request<any[]>(`/api/comments/admin/all${query}`)
+  }
+
+  async updateComment(id: string, approved: boolean) {
+    return this.request<any>(`/api/comments/admin/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ approved }),
+    })
+  }
+
+  async deleteComment(id: string) {
+    return this.request<any>(`/api/comments/admin/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // --- Website: Testimonials ---
+  async getTestimonials(all = true) {
+    return this.request<any[]>(`/api/testimonials${all ? '?all=true' : ''}`)
+  }
+
+  async createTestimonial(data: any) {
+    return this.request<any>('/api/testimonials', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateTestimonial(id: string, data: any) {
+    return this.request<any>(`/api/testimonials/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteTestimonial(id: string) {
+    return this.request<any>(`/api/testimonials/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // --- Website: Careers & Applications ---
+  async getJobs() {
+    return this.request<any[]>('/api/jobs/admin/all')
+  }
+
+  async createJob(data: any) {
+    return this.request<any>('/api/jobs/admin', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateJob(id: string, data: any) {
+    return this.request<any>(`/api/jobs/admin/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async toggleJobActive(id: string) {
+    return this.request<any>(`/api/jobs/admin/${id}/toggle`, {
+      method: 'PATCH',
+    })
+  }
+
+  async deleteJob(id: string) {
+    return this.request<any>(`/api/jobs/admin/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async getJobApplications(jobId?: string) {
+    const qs = jobId ? `?jobId=${jobId}` : ''
+    return this.request<any[]>(`/api/jobs/admin/applications${qs}`)
+  }
+
+  // --- Website: Settings & Social Links ---
+  async getSettings() {
+    return this.request<Record<string, string>>('/api/settings')
+  }
+
+  async updateSetting(key: string, value: string) {
+    return this.request<any>('/api/settings/admin', {
+      method: 'PUT',
+      body: JSON.stringify({ key, value }),
+    })
+  }
+
+  async getSocialLinks() {
+    return this.request<any[]>('/api/social-links')
+  }
+
+  async createSocialLink(data: any) {
+    return this.request<any>('/api/social-links/admin', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateSocialLink(id: string, data: any) {
+    return this.request<any>(`/api/social-links/admin/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteSocialLink(id: string) {
+    return this.request<any>(`/api/social-links/admin/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // --- Website: Satisfaction Survey ---
+  async getSatisfactionResponses() {
+    return this.request<any[]>('/api/satisfaction/admin')
+  }
+
+  async generateSatisfactionLink(partnerName: string) {
+    return this.request<any>('/api/satisfaction/admin/generate-link', {
+      method: 'POST',
+      body: JSON.stringify({ partnerName }),
+    })
+  }
+
+  // --- Website: Contact Messages ---
+  async getContactMessages() {
+    return this.request<any[]>('/api/contact/admin')
+  }
+
+  async markContactRead(id: string) {
+    return this.request<any>(`/api/contact/admin/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ isRead: true }),
+    })
+  }
+
+  // --- Finance ---
   async getFinanceOverview() {
-    return this.request<any>('/api/finance/overview')
+    return this.request<{
+      revenue: number
+      expenses: number
+      net: number
+      outstanding: number
+      overdue: number
+    }>('/api/finance/overview')
   }
 
-  async getRevenue() {
-    return this.request<any[]>('/api/finance/revenue')
-  }
-
-  async createRevenue(data: any) {
-    return this.request<any>('/api/finance/revenue', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
-  }
-
-  async getExpenses() {
-    return this.request<any[]>('/api/finance/expenses')
-  }
-
-  async createExpense(data: any) {
-    return this.request<any>('/api/finance/expenses', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
+  async getFinanceReports() {
+    return this.request<{
+      summary: { totalRevenue: number; totalExpenses: number; netIncome: number; margin: number }
+      monthlyTrends: { month: string; revenue: number; expenses: number; net: number }[]
+      expenseCategories: { category: string; total: number }[]
+      revenueCategories: { category: string; total: number }[]
+    }>('/api/finance/reports')
   }
 
   async getInvoices() {
@@ -408,20 +427,59 @@ class ApiClient {
     })
   }
 
-  // GitHub Integration
+  async deleteInvoice(id: string) {
+    return this.request<any>(`/api/finance/invoices/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async getRevenue() {
+    return this.request<any[]>('/api/finance/revenue')
+  }
+
+  async createRevenue(data: any) {
+    return this.request<any>('/api/finance/revenue', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteRevenue(id: string) {
+    return this.request<any>(`/api/finance/revenue/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async getExpenses() {
+    return this.request<any[]>('/api/finance/expenses')
+  }
+
+  async createExpense(data: any) {
+    return this.request<any>('/api/finance/expenses', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteExpense(id: string) {
+    return this.request<any>(`/api/finance/expenses/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // --- GitHub Integration ---
   async getGitHubStatus() {
-    return this.request<any>('/api/v1/integrations/github/status')
+    return this.request<{ connected: boolean; organization?: string }>('/api/v1/integrations/github/status')
   }
 
   async getGitHubOrganization() {
     return this.request<any>('/api/v1/integrations/github/organization')
   }
 
-  async getGitHubRepositories(params?: { archived?: boolean; search?: string; sort?: string }) {
+  async getGitHubRepositories(params?: { type?: string; language?: string }) {
     const query = new URLSearchParams()
-    if (params?.archived !== undefined) query.set('archived', String(params.archived))
-    if (params?.search) query.set('search', params.search)
-    if (params?.sort) query.set('sort', params.sort)
+    if (params?.type) query.set('type', params.type)
+    if (params?.language) query.set('language', params.language)
     const qs = query.toString()
     return this.request<any[]>(`/api/v1/integrations/github/repositories${qs ? '?' + qs : ''}`)
   }
@@ -430,166 +488,58 @@ class ApiClient {
     return this.request<any>(`/api/v1/integrations/github/repositories/${id}`)
   }
 
-  async getGitHubMembers() {
-    return this.request<any[]>('/api/v1/integrations/github/members')
-  }
-
-  async getGitHubIssues(params?: { repositoryId?: string; state?: string; search?: string }) {
+  async getGitHubIssues(params?: { repoId?: string; state?: string }) {
     const query = new URLSearchParams()
-    if (params?.repositoryId) query.set('repositoryId', params.repositoryId)
+    if (params?.repoId) query.set('repoId', params.repoId)
     if (params?.state) query.set('state', params.state)
-    if (params?.search) query.set('search', params.search)
     const qs = query.toString()
     return this.request<any[]>(`/api/v1/integrations/github/issues${qs ? '?' + qs : ''}`)
   }
 
-  async getGitHubPullRequests(params?: { repositoryId?: string; state?: string }) {
+  async getGitHubPullRequests(params?: { repoId?: string; state?: string }) {
     const query = new URLSearchParams()
-    if (params?.repositoryId) query.set('repositoryId', params.repositoryId)
+    if (params?.repoId) query.set('repoId', params.repoId)
     if (params?.state) query.set('state', params.state)
     const qs = query.toString()
     return this.request<any[]>(`/api/v1/integrations/github/pull-requests${qs ? '?' + qs : ''}`)
   }
 
-  async getGitHubReleases(params?: { repositoryId?: string }) {
-    const query = new URLSearchParams()
-    if (params?.repositoryId) query.set('repositoryId', params.repositoryId)
-    const qs = query.toString()
-    return this.request<any[]>(`/api/v1/integrations/github/releases${qs ? '?' + qs : ''}`)
+  async getGitHubReleases() {
+    return this.request<any[]>('/api/v1/integrations/github/releases')
   }
 
-  async getGitHubWorkflows(params?: { repositoryId?: string; status?: string }) {
-    const query = new URLSearchParams()
-    if (params?.repositoryId) query.set('repositoryId', params.repositoryId)
-    if (params?.status) query.set('status', params.status)
-    const qs = query.toString()
-    return this.request<any[]>(`/api/v1/integrations/github/workflows${qs ? '?' + qs : ''}`)
+  async getGitHubWorkflows() {
+    return this.request<any[]>('/api/v1/integrations/github/workflows')
   }
 
-  async getGitHubHealth() {
-    return this.request<any>('/api/v1/integrations/github/health')
+  async getGitHubActivity() {
+    return this.request<any[]>('/api/v1/integrations/github/activity')
   }
 
-  async getGitHubActivity(limit?: number) {
-    const qs = limit ? `?limit=${limit}` : ''
-    return this.request<any[]>(`/api/v1/integrations/github/activity${qs}`)
-  }
-
-  async syncGitHub(data?: { organization?: boolean; repositories?: boolean; members?: boolean; issues?: boolean; pullRequests?: boolean; releases?: boolean; workflows?: boolean }) {
+  async syncGitHub() {
     return this.request<any>('/api/v1/integrations/github/sync', {
       method: 'POST',
-      body: JSON.stringify(data || {}),
     })
   }
 
-  async getGitHubProjectRepositories(projectId: string) {
-    return this.request<any[]>(`/api/v1/integrations/github/projects/${projectId}/repositories`)
+  // --- Tasks (Today Tasks for dashboard) ---
+  async getTodayTasks() {
+    return this.request<any[]>('/api/tasks?today=true')
   }
 
-  async linkGitHubRepository(projectId: string, repositoryId: string, isPrimary?: boolean, role?: string) {
-    return this.request<any>(`/api/v1/integrations/github/projects/${projectId}/repositories`, {
+  // --- Image Upload ---
+  async uploadImage(file: File): Promise<{ url: string }> {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch(`${this.baseUrl}/api/upload`, {
       method: 'POST',
-      body: JSON.stringify({ repositoryId, isPrimary, role }),
+      credentials: 'include',
+      body: formData,
     })
-  }
-
-  async unlinkGitHubRepository(projectId: string, repositoryId: string) {
-    return this.request<any>(`/api/v1/integrations/github/projects/${projectId}/repositories/${repositoryId}`, {
-      method: 'DELETE',
-    })
-  }
-
-  // Products
-  async getProducts() {
-    return this.request<any[]>('/api/products')
-  }
-
-  async createProduct(data: any) {
-    return this.request<any>('/api/products', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
-  }
-
-  async updateProduct(id: string, data: any) {
-    return this.request<any>(`/api/products/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    })
-  }
-
-  async deleteProduct(id: string) {
-    return this.request<any>(`/api/products/${id}`, {
-      method: 'DELETE',
-    })
-  }
-
-  // Roadmap
-  async getRoadmapItems() {
-    return this.request<any[]>('/api/products/roadmap')
-  }
-
-  async createRoadmapItem(data: any) {
-    return this.request<any>('/api/products/roadmap', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
-  }
-
-  async updateRoadmapItem(id: string, data: any) {
-    return this.request<any>(`/api/products/roadmap/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    })
-  }
-
-  async deleteRoadmapItem(id: string) {
-    return this.request<any>(`/api/products/roadmap/${id}`, {
-      method: 'DELETE',
-    })
-  }
-
-  // Applications
-  async getApplications() {
-    return this.request<any[]>('/api/careers/applications')
-  }
-
-  // Notifications
-  async getNotifications() {
-    return this.request<any[]>('/api/notifications')
-  }
-
-  async getUnreadNotificationCount() {
-    return this.request<{ count: number }>('/api/notifications/unread-count')
-  }
-
-  async markNotificationRead(id: string) {
-    return this.request<any>(`/api/notifications/${id}/read`, { method: 'PUT' })
-  }
-
-  async markAllNotificationsRead() {
-    return this.request<any>('/api/notifications/read-all', { method: 'PUT' })
-  }
-
-  async deleteNotification(id: string) {
-    return this.request<any>(`/api/notifications/${id}`, { method: 'DELETE' })
-  }
-
-  // Audit Log
-  async getAuditLog(params?: { entity_type?: string; limit?: number; offset?: number }) {
-    const query = new URLSearchParams()
-    if (params?.entity_type) query.set('entity_type', params.entity_type)
-    if (params?.limit) query.set('limit', String(params.limit))
-    if (params?.offset) query.set('offset', String(params.offset))
-    const qs = query.toString()
-    return this.request<any[]>(`/api/audit${qs ? '?' + qs : ''}`)
-  }
-
-  async recordAuditEvent(data: { action: string; entity_type?: string; entity_id?: string; details?: any }) {
-    return this.request<any>('/api/audit', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
+    if (!res.ok) {
+      throw new Error('Image upload failed')
+    }
+    return res.json()
   }
 }
 

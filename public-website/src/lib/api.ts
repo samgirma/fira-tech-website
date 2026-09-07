@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
 class PublicApiClient {
   private baseUrl: string
@@ -112,6 +112,18 @@ class PublicApiClient {
     coverLetter?: string
   }) {
     return this.post<any>('/api/v1/public/job-applications', data)
+  }
+
+  async submitSatisfaction(data: { partner_name: string; rating: number; feedback: string }) {
+    return this.post<any>('/api/satisfaction', data)
+  }
+
+  async getComments(blogId: string) {
+    return this.get<any[]>(`/api/comments/${blogId}`)
+  }
+
+  async submitComment(data: { blogId: string; author: string; email?: string; content: string }) {
+    return this.post<any>('/api/comments', data)
   }
 }
 

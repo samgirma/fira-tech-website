@@ -17,36 +17,6 @@ export default defineConfig({
     },
   },
   build: {
-    rollupOptions: {
-      output: {
-        manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
-              return 'vendor'
-            }
-            if (id.includes('@radix-ui') || id.includes('lucide-react')) {
-              return 'ui'
-            }
-            return 'vendor-libs'
-          }
-          
-          if (id.includes('admin') || id.includes('BlogDetail')) {
-            return 'admin'
-          }
-          if (id.includes('Blogs') || id.includes('CommentsSection')) {
-            return 'blog'
-          }
-          if (id.includes('AIAssistant')) {
-            return 'ai'
-          }
-          if (id.includes('ErrorBoundary') || id.includes('SystemConfigLoader')) {
-            return 'components'
-          }
-          
-          return 'main'
-        }
-      },
-    },
     optimizeDeps: {
       include: ['react', 'react-dom', 'react-router-dom', 'framer-motion']
     },

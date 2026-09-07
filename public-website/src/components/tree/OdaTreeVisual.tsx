@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 interface OdaTreeVisualProps {
   className?: string;
   withTechOverlay?: boolean;
@@ -5,11 +7,21 @@ interface OdaTreeVisualProps {
 }
 
 export function OdaTreeVisual({ className = "", withTechOverlay = true, parallax = false }: OdaTreeVisualProps) {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReducedMotion(mediaQuery.matches);
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mediaQuery.addEventListener("change", handler);
+    return () => mediaQuery.removeEventListener("change", handler);
+  }, []);
+
   return (
     <div className={`relative ${className}`} aria-hidden="true">
       {/* Background tree image */}
       <div
-        className={`absolute inset-0 bg-cover bg-center bg-no-repeat ${parallax ? "will-change-transform" : ""}`}
+        className={`absolute inset-0 bg-cover bg-center bg-no-repeat ${parallax && !prefersReducedMotion ? "will-change-transform" : ""}`}
         style={{
           backgroundImage: "url(/hero-oda-tree.jpg)",
           opacity: 0.15,
@@ -114,29 +126,38 @@ export function OdaTreeVisual({ className = "", withTechOverlay = true, parallax
         </svg>
       )}
 
-      {/* Floating particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(12)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full"
-            style={{
-              width: `${2 + Math.random() * 3}px`,
-              height: `${2 + Math.random() * 3}px`,
-              left: `${10 + Math.random() * 80}%`,
-              top: `${10 + Math.random() * 80}%`,
-              backgroundColor: i % 3 === 0 ? "hsl(43 85% 55% / 0.3)" : "hsl(152 45% 38% / 0.2)",
-              animation: `float ${4 + i * 0.5}s ease-in-out infinite`,
-              animationDelay: `${i * 0.3}s`,
-            }}
-          />
-        ))}
-      </div>
+      {/* Floating particles (hidden or paused if prefers-reduced-motion) */}
+      {!prefersReducedMotion && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(12)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute rounded-full"
+              style={{
+                width: `${2 + Math.random() * 3}px`,
+                height: `${2 + Math.random() * 3}px`,
+                left: `${10 + Math.random() * 80}%`,
+                top: `${10 + Math.random() * 80}%`,
+                backgroundColor: i % 3 === 0 ? "hsl(43 85% 55% / 0.3)" : "hsl(152 45% 38% / 0.2)",
+                animation: `float ${4 + i * 0.5}s ease-in-out infinite`,
+                animationDelay: `${i * 0.3}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       <style>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px) translateX(0px); opacity: 0.3; }
           50% { transform: translateY(-12px) translateX(4px); opacity: 0.7; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          * {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+          }
         }
       `}</style>
     </div>

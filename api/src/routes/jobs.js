@@ -153,4 +153,27 @@ router.post('/:id/apply', async (req, res) => {
   }
 })
 
+// GET /api/jobs/admin/applications - Admin: get all applications
+router.get('/admin/applications', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { jobId } = req.query
+    let query = `
+      SELECT a.*, j.title as job_title, j.department as job_department
+      FROM applications a
+      LEFT JOIN jobs j ON a.job_id = j.id
+    `
+    const params = []
+    if (jobId) {
+      query += ' WHERE a.job_id = $1'
+      params.push(jobId)
+    }
+    query += ' ORDER BY a.created_at DESC'
+    const result = await db.query(query, params)
+    return res.status(200).json(result.rows)
+  } catch (error) {
+    console.error('Error fetching applications:', error)
+    return res.status(500).json({ error: 'Failed to fetch applications' })
+  }
+})
+
 export default router

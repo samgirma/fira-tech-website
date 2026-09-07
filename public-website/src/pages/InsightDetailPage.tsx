@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Clock, User } from "lucide-react";
 import { site } from "@/lib/api";
+import CommentsSection from "@/components/CommentsSection";
 
 export default function InsightDetailPage() {
   const { slug } = useParams();
@@ -107,6 +108,9 @@ export default function InsightDetailPage() {
               ))}
             </div>
           )}
+
+          {/* Public Discussion Comments Section */}
+          <CommentsSection blogId={post.id} />
         </div>
       </section>
     </>
