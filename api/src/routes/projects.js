@@ -137,7 +137,6 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
     const {
       name,
       clientId,
-      customerId,
       description,
       category,
       status = 'planning',
@@ -153,17 +152,14 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Project name is required' })
     }
 
-    const cId = clientId || customerId || null
-
     const result = await db.query(
       `INSERT INTO projects (
-        name, client_id, customer_id, description, category, status, progress, start_date, deadline, budget, technologies, priority
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        name, client_id, description, category, status, progress, start_date, deadline, budget, technologies, priority
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *`,
       [
         name,
-        cId,
-        cId,
+        clientId || null,
         description || null,
         category || null,
         status,
@@ -189,7 +185,6 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
     const {
       name,
       clientId,
-      customerId,
       description,
       category,
       status,
@@ -208,31 +203,27 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Project not found' })
     }
 
-    const cId = clientId || customerId
-
     const result = await db.query(
       `UPDATE projects SET
         name = COALESCE($1, name),
         client_id = COALESCE($2, client_id),
-        customer_id = COALESCE($3, customer_id),
-        description = COALESCE($4, description),
-        category = COALESCE($5, category),
-        status = COALESCE($6, status),
-        progress = COALESCE($7, progress),
-        start_date = COALESCE($8, start_date),
-        deadline = COALESCE($9, deadline),
-        budget = COALESCE($10, budget),
-        actual_cost = COALESCE($11, actual_cost),
-        revenue = COALESCE($12, revenue),
-        technologies = COALESCE($13, technologies),
-        priority = COALESCE($14, priority),
+        description = COALESCE($3, description),
+        category = COALESCE($4, category),
+        status = COALESCE($5, status),
+        progress = COALESCE($6, progress),
+        start_date = COALESCE($7, start_date),
+        deadline = COALESCE($8, deadline),
+        budget = COALESCE($9, budget),
+        actual_cost = COALESCE($10, actual_cost),
+        revenue = COALESCE($11, revenue),
+        technologies = COALESCE($12, technologies),
+        priority = COALESCE($13, priority),
         updated_at = NOW()
-      WHERE id = $15
+      WHERE id = $14
       RETURNING *`,
       [
         name,
-        cId,
-        cId,
+        clientId || null,
         description,
         category,
         status,
