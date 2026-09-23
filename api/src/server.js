@@ -38,6 +38,18 @@ app.use(helmet({
   crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
 }))
 
+// Capture error messages from JSON responses for logging
+app.use((req, res, next) => {
+  const originalJson = res.json.bind(res)
+  res.json = (body) => {
+    if (body && (body.error || body.message) && res.statusCode >= 400) {
+      res.locals.errMsg = body.error || body.message
+    }
+    return originalJson(body)
+  }
+  next()
+})
+
 // Structured HTTP request logging with Pino
 app.use(pinoHttp({
   logger,
@@ -50,7 +62,7 @@ app.use(pinoHttp({
     return 'info'
   },
   customSuccessMessage: (req, res) => `${req.method} ${req.url} → ${res.statusCode}`,
-  customErrorMessage: () => '',
+  customErrorMessage: (req, res) => `${req.method} ${req.url} → ${res.statusCode}${res.locals?.errMsg ? ` ${res.locals.errMsg}` : ''}`,
   serializers: {
     err: () => undefined,
     req: (req) => ({ method: req.method, url: req.url }),

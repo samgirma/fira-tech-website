@@ -25,8 +25,20 @@ class ApiClient {
     const response = await fetch(url, config)
     
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Request failed' }))
-      throw new Error(error.error || `HTTP ${response.status}`)
+      const errorBody = await response.json().catch(() => ({ error: response.statusText || 'Request failed' }))
+      const errorMsg = errorBody.error || errorBody.message || `HTTP ${response.status}: ${response.statusText}`
+      const detail = errorBody.detail ? ` (${errorBody.detail})` : ''
+      const fullMessage = `${errorMsg}${detail}`
+      
+      console.error(
+        `%c[API ${options.method || 'GET'}] %c${endpoint} %cfailed (${response.status} ${response.statusText}): %c${fullMessage}`,
+        'color: #f87171; font-weight: bold;',
+        'color: #38bdf8; font-weight: bold;',
+        'color: #94a3b8;',
+        'color: #ef4444; font-weight: bold;',
+        { endpoint, status: response.status, statusText: response.statusText, details: errorBody }
+      )
+      throw new Error(fullMessage)
     }
 
     return response.json()

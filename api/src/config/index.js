@@ -36,6 +36,7 @@ export const config = {
     geminiKey: process.env.GEMINI_API_KEY,
     groqKey: process.env.GROQ_API_KEY,
     chatEnableRules: process.env.CHAT_ENABLE_RULES === 'true',
+    monthlyCapUsd: parseFloat(process.env.AI_MONTHLY_CAP_USD || '25.00'),
   },
 
   github: {

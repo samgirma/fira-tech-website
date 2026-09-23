@@ -89,6 +89,9 @@ export default function ProjectsPage() {
     try {
       await api.deleteProject(id)
       await loadProjects()
+    } catch (err: any) {
+      console.warn(`[Projects Page] Project deletion could not be completed:`, err?.message || err)
+      alert(err?.message || 'Failed to delete project')
     } finally {
       setDeletingId(null)
     }

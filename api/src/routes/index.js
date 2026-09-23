@@ -17,7 +17,8 @@ import publicRoutes from './public.js'
 import portfolioRoutes from './portfolio.js'
 import testimonialRoutes from './testimonials.js'
 import serviceRoutes from './services.js'
-import chatRoutes from './chat.js'
+import ragChatRoutes from '../modules/ai/rag.routes.js'
+import aiRoutes from '../modules/ai/ai.routes.js'
 import githubRoutes from '../modules/github/github.routes.js'
 
 const router = Router()
@@ -38,8 +39,9 @@ router.use('/v1/public', publicRoutes)
 // Auth routes
 router.use('/auth', authRoutes)
 
-// AI Chatbot
-router.use('/chat', chatRoutes)
+// AI Subsystem
+router.use('/chat', ragChatRoutes)
+router.use('/ai', aiRoutes)
 
 // Public and CMS content routes
 router.use('/blogs', blogRoutes)

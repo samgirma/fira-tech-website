@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { db } from '../config/database.js'
 import { authenticate, requireAdmin } from '../middleware/auth.js'
 import { validate, blogSchema } from '../middleware/validate.js'
+import { indexSingleItem, deleteItemChunks } from '../modules/ai/rag.indexer.js'
 
 const router = Router()
 
@@ -66,7 +67,12 @@ router.post('/', authenticate, requireAdmin, validate(blogSchema), async (req, r
       [title, slug, content, req.user.id, published || false, published ? new Date() : null]
     )
 
-    return res.status(201).json(result.rows[0])
+    const created = result.rows[0]
+    if (created.published) {
+      indexSingleItem('blog', created.id).catch(() => {})
+    }
+
+    return res.status(201).json(created)
   } catch (error) {
     console.error('creating blog:', error.message)
     return res.status(500).json({ error: 'Failed to create blog' })
@@ -99,7 +105,14 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Blog not found' })
     }
 
-    return res.status(200).json(result.rows[0])
+    const updated = result.rows[0]
+    if (updated.published) {
+      indexSingleItem('blog', updated.id).catch(() => {})
+    } else {
+      deleteItemChunks('blog', updated.id).catch(() => {})
+    }
+
+    return res.status(200).json(updated)
   } catch (error) {
     console.error('updating blog:', error.message)
     return res.status(500).json({ error: 'Failed to update blog' })
@@ -114,6 +127,8 @@ router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Blog not found' })
     }
+
+    deleteItemChunks('blog', req.params.id).catch(() => {})
 
     return res.status(200).json({ message: 'Blog deleted successfully' })
   } catch (error) {
