@@ -1,13 +1,18 @@
 import { Router } from 'express'
 import multer from 'multer'
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import { v2 as cloudinary } from 'cloudinary'
 import { db } from '../config/database.js'
+import { config } from '../config/index.js'
 import { validateAndSanitizeResume } from '../utils/file_sanitizer.js'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const router = Router()
+
+// Configure Cloudinary for resume (CV) storage — serverless-safe, unlike local disk
+cloudinary.config({
+  cloud_name: config.cloudinary.cloud_name,
+  api_key: config.cloudinary.api_key,
+  api_secret: config.cloudinary.api_secret,
+})
 
 const resumeUpload = multer({
   storage: multer.memoryStorage(),
@@ -293,14 +298,22 @@ router.post('/upload-cv', resumeUpload.single('file'), async (req, res, next) =>
       return res.status(400).json({ error: validation.error })
     }
 
-    const uploadDir = path.join(__dirname, '../../uploads/resumes')
-    await fs.promises.mkdir(uploadDir, { recursive: true })
-    const targetPath = path.join(uploadDir, validation.storageFilename)
-    await fs.promises.writeFile(targetPath, file.buffer)
+    // Upload to Cloudinary (raw resource) instead of local disk, which is read-only on serverless
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'fira-tech/resumes',
+          resource_type: 'raw',
+          public_id: validation.storageFilename,
+        },
+        (error, uploadResult) => (error ? reject(error) : resolve(uploadResult))
+      )
+      stream.end(file.buffer)
+    })
 
     return res.status(201).json({
       success: true,
-      url: `/uploads/resumes/${validation.storageFilename}`,
+      url: result.secure_url,
       filename: validation.originalName,
       storageFilename: validation.storageFilename,
       size: validation.size,

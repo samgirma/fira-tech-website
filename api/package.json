@@ -10,6 +10,9 @@
     "db:migrate:github": "node src/utils/migrate-github.js",
     "db:seed": "node src/utils/seed.js"
   },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^2.4.3",

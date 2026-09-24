@@ -111,12 +111,15 @@ app.use('/api', routes)
 app.use(notFound)
 app.use(errorHandler)
 
-// Start server
-const PORT = config.port
+// Start server when run directly (local dev / standalone). On Vercel the exported
+// app is invoked per-request by the platform; we must not bind a port there.
+if (!process.env.VERCEL) {
+  const PORT = config.port
 
-app.listen(PORT, () => {
-  logger.info({ port: PORT }, `🚀 Fira Tech API running on http://localhost:${PORT}`)
-  logger.info(`📝 Health check: http://localhost:${PORT}/api/health`)
-})
+  app.listen(PORT, () => {
+    logger.info({ port: PORT }, `🚀 Fira Tech API running on http://localhost:${PORT}`)
+    logger.info(`📝 Health check: http://localhost:${PORT}/api/health`)
+  })
+}
 
 export default app

@@ -13,8 +13,8 @@ FIRA TECH PLATFORM
       ┌────────────┼────────────┐
       │            │            │
       ▼            ▼            ▼
-Public Website  Admin Site  Mobile App
-firatech.systems admin.firatech React Native
+Public Website  Admin Site
+firatech.systems admin.firatech
 ```
 
 ## Directory Structure
@@ -24,7 +24,6 @@ firatech.systems admin.firatech React Native
 ├── public-website/      # Public-facing website
 ├── admin-site/          # Internal web administration system
 ├── api/                 # Shared backend API
-├── mobile-app/          # React Native admin application
 ├── docs/                # Architecture documentation
 ├── README.md
 └── .gitignore
@@ -44,13 +43,8 @@ firatech.systems admin.firatech React Native
 
 ### api
 - **URL**: https://api.firatech.systems
-- **Stack**: Node.js + Express + Supabase
+- **Stack**: Node.js + Express + Supabase (PostgreSQL)
 - **Purpose**: Shared backend API for all clients
-
-### mobile-app
-- **Platform**: iOS + Android
-- **Stack**: React Native + Expo
-- **Purpose**: Mobile admin application
 
 ## Development
 
@@ -65,7 +59,6 @@ firatech.systems admin.firatech React Native
 cd public-website && npm install
 cd ../admin-site && npm install
 cd ../api && npm install
-cd ../mobile-app && npm install
 ```
 
 ### Running Locally
@@ -82,10 +75,6 @@ npm run dev
 # Admin Site (port 3001)
 cd admin-site
 npm run dev
-
-# Mobile App
-cd mobile-app
-npm start
 ```
 
 ### Building
@@ -109,27 +98,29 @@ See `.env.example` in each service directory for required configuration.
 
 | Variable | Service | Description |
 |----------|---------|-------------|
-| `SUPABASE_URL` | API | Supabase project URL |
-| `SUPABASE_ANON_KEY` | API, Public, Admin | Supabase anonymous key |
-| `SUPABASE_SERVICE_ROLE_KEY` | API | Supabase service role key |
+| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | API | PostgreSQL (Supabase) connection |
 | `JWT_SECRET` | API | JWT signing secret |
+| `CORS_ORIGINS` | API | Allowed origins (public + admin domains) |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | API | Image & CV upload storage |
 | `VITE_API_BASE_URL` | Public, Admin | API endpoint URL |
 
 ## Documentation
 
+- [Deployment](DEPLOYMENT.md)
 - [Full-Stack Branch Audit](docs/FULL-STACK-BRANCH-AUDIT.md)
 - [Current Database](docs/CURRENT-DATABASE.md)
 - [API Migration Plan](docs/API-MIGRATION.md)
 
 ## Deployment
 
-Each service is independently deployable to Vercel:
+See [DEPLOYMENT.md](DEPLOYMENT.md) for full Vercel setup (three independent
+projects from this one repo). Summary:
 
-| Service | Vercel Project | Root Directory |
-|---------|---------------|----------------|
-| Public Website | firatech-systems | `public-website` |
-| Admin Site | admin-firatech | `admin-site` |
-| API | api-firatech | `api` |
+| Service | Production URL | Root Directory |
+|---------|----------------|----------------|
+| Public Website | https://firatech.systems | `public-website` |
+| Admin Site | https://admin.firatech.systems | `admin-site` |
+| API | https://api.firatech.systems | `api` |
 
 ## License
 
