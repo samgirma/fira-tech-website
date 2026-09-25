@@ -25,7 +25,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+import { API_BASE_URL } from '../../services/api'
 
 type JobType = 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERNSHIP'
 type ExperienceLevel = 'ENTRY' | 'MID' | 'SENIOR' | 'LEAD'

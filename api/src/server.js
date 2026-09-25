@@ -71,9 +71,24 @@ app.use(pinoHttp({
 }))
 
 // CORS configuration
+// Loopback origins (localhost/127.0.0.1/[::1] on any port) are allowed outside
+// production so local dev works regardless of the browser origin/port the user
+// opened. Production uses the strict CORS_ORIGINS allowlist.
+const isLoopbackOrigin = (origin) => {
+  if (process.env.NODE_ENV === 'production') return false
+  if (!origin) return false
+  try {
+    const url = new URL(origin)
+    if (url.protocol !== 'http:') return false
+    return ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)
+  } catch {
+    return false
+  }
+}
+
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || config.cors.origins.includes(origin)) {
+    if (!origin || config.cors.origins.includes(origin) || isLoopbackOrigin(origin)) {
       callback(null, true)
     } else {
       callback(new Error('Not allowed by CORS'))
